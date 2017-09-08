@@ -3,7 +3,7 @@ from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets("/tmp/data/", one_hot=True)
 
 
-batch_size = 128
+batch_size = 100
 n_classes = 10 # MNIST total classes (0-9 digits)
 
 
@@ -26,7 +26,7 @@ def convolutional_neural_network(x):#, keep_rate):
 	    # 4x4 conv, 3 inputs, 5 outputs 
 	    'W_conv2': tf.Variable(tf.random_normal([4, 4, 3, 5])),
 	    # fully connected, 28*28*5 inputs, 100 outputs
-	    'W_fc': tf.Variable(tf.random_normal([28*28*5, 100])),
+	    'W_fc': tf.Variable(tf.random_normal([7*7*5, 100])),
 	    # 100 inputs, 10 outputs (class prediction)
 	    'out': tf.Variable(tf.random_normal([100, n_classes]))
 	}
@@ -51,20 +51,25 @@ def convolutional_neural_network(x):#, keep_rate):
 
 	# Fully connected layer
 	# Reshape conv2 output to fit fully connected layer
-	fc = tf.reshape(conv2, [-1, 28*28*5])
+	print conv2.shape
+
+	fc = tf.reshape(conv2, [-1, 7*7*5])
+	print fc.shape
 	fc = tf.nn.relu(tf.matmul(fc, weights['W_fc']) + biases['b_fc'])
+
+	print fc.shape
 
 	output = tf.matmul(fc, weights['out']) + biases['out']
 	return output
 
 def train_neural_network(x):
     prediction = convolutional_neural_network(x)
-    cost = tf.reduce_mean( tf.nn.softmax_cross_entropy_with_logits(prediction,y) )
+    cost = tf.reduce_mean( tf.nn.softmax_cross_entropy_with_logits(logits = prediction,labels = y) )
     optimizer = tf.train.AdamOptimizer().minimize(cost)
     
-    hm_epochs = 10
+    hm_epochs = 1000
     with tf.Session() as sess:
-        sess.run(tf.initialize_all_variables())
+        sess.run(tf.global_variables_initializer())
 
         for epoch in range(hm_epochs):
             epoch_loss = 0
