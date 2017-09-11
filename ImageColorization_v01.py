@@ -99,38 +99,38 @@ def convolutional_neural_network(x):#, keep_rate):
 	}
 	# Convolution Layers, using our function
 	#block1
-	conv_b1_1 = tf.nn.relu(conv2d(x, weights['W_conv_b1_1']) + biases['b_conv_b1_1'],1)
-	conv_b1_2 = tf.nn.relu(conv2d(x, weights['W_conv_b1_2']) + biases['b_conv_b1_2'],2)
+	conv_b1_1 = tf.nn.relu(conv2d(x, weights['W_conv_b1_1'], 1) + biases['b_conv_b1_1'])
+	conv_b1_2 = tf.nn.relu(conv2d(x, weights['W_conv_b1_2'], 2) + biases['b_conv_b1_2'])
 	#block2
-	conv_b2_1 = tf.nn.relu(conv2d(x, weights['W_conv_2_1']) + biases['b_conv_b2_1'],1)
-	conv_b2_2 = tf.nn.relu(conv2d(x, weights['W_conv_2_2']) + biases['b_conv_b2_2'],2)
+	conv_b2_1 = tf.nn.relu(conv2d(x, weights['W_conv_2_1'], 1) + biases['b_conv_b2_1'])
+	conv_b2_2 = tf.nn.relu(conv2d(x, weights['W_conv_2_2'], 2) + biases['b_conv_b2_2'])
 	#block3
-	conv_b3_1 = tf.nn.relu(conv2d(x, weights['W_conv_b3_1']) + biases['b_conv_b3_1'],1)
-	conv_b3_2 = tf.nn.relu(conv2d(x, weights['W_conv_b3_2']) + biases['b_conv_b3_2'],1)
-	conv_b3_3 = tf.nn.relu(conv2d(x, weights['W_conv_b3_3']) + biases['b_conv_b3_3'],2)
+	conv_b3_1 = tf.nn.relu(conv2d(x, weights['W_conv_b3_1'],1) + biases['b_conv_b3_1'])
+	conv_b3_2 = tf.nn.relu(conv2d(x, weights['W_conv_b3_2'],1) + biases['b_conv_b3_2'])
+	conv_b3_3 = tf.nn.relu(conv2d(x, weights['W_conv_b3_3'], 2) + biases['b_conv_b3_3'])
 	#block4
-	conv_b4_1 = tf.nn.relu(conv2d(x, weights['W_conv_b4_1']) + biases['b_conv_b4_1'],1)
-	conv_b4_2 = tf.nn.relu(conv2d(x, weights['W_conv_b4_2']) + biases['b_conv_b4_2'],1)
-	conv_b4_3 = tf.nn.relu(conv2d(x, weights['W_conv_b4_3']) + biases['b_conv_b4_3'],1)
+	conv_b4_1 = tf.nn.relu(conv2d(x, weights['W_conv_b4_1'],1 ) + biases['b_conv_b4_1'])
+	conv_b4_2 = tf.nn.relu(conv2d(x, weights['W_conv_b4_2'], 1) + biases['b_conv_b4_2'])
+	conv_b4_3 = tf.nn.relu(conv2d(x, weights['W_conv_b4_3'], 1) + biases['b_conv_b4_3'])
 	#block5
-	conv_b5_1 = tf.nn.relu(conv2d(x, weights['W_conv_b5_1']) + biases['b_conv_b5_1'],1)
-	conv_b5_2 = tf.nn.relu(conv2d(x, weights['W_conv_b5_2']) + biases['b_conv_b5_2'],1)
-	conv_b5_3 = tf.nn.relu(conv2d(x, weights['W_conv_b5_3']) + biases['b_conv_b5_3'],1)
+	conv_b5_1 = tf.nn.relu(conv2d(x, weights['W_conv_b5_1'],1) + biases['b_conv_b5_1'])
+	conv_b5_2 = tf.nn.relu(conv2d(x, weights['W_conv_b5_2'],1) + biases['b_conv_b5_2'])
+	conv_b5_3 = tf.nn.relu(conv2d(x, weights['W_conv_b5_3'],1) + biases['b_conv_b5_3'])
 	#block6
-	conv_b6_1 = tf.nn.relu(conv2d(x, weights['W_conv_b6_1']) + biases['b_conv_b6_1'],1)
-	conv_b6_2 = tf.nn.relu(conv2d(x, weights['W_conv_b6_2']) + biases['b_conv_b6_2'],1)
-	conv_b6_3 = tf.nn.relu(conv2d(x, weights['W_conv_b6_3']) + biases['b_conv_b6_3'],1)
+	conv_b6_1 = tf.nn.relu(conv2d(x, weights['W_conv_b6_1'],1) + biases['b_conv_b6_1'])
+	conv_b6_2 = tf.nn.relu(conv2d(x, weights['W_conv_b6_2'],1) + biases['b_conv_b6_2'])
+	conv_b6_3 = tf.nn.relu(conv2d(x, weights['W_conv_b6_3'],1) + biases['b_conv_b6_3'])
 	#block7
-	conv_b7_1 = tf.nn.relu(conv2d(x, weights['W_conv_b7_1']) + biases['b_conv_b7_1'],1)
-	conv_b7_2 = tf.nn.relu(conv2d(x, weights['W_conv_b7_2']) + biases['b_conv_b7_2'],1)
-	conv_b7_3 = tf.nn.relu(conv2d(x, weights['W_conv_b7_3']) + biases['b_conv_b7_3'],1)
+	conv_b7_1 = tf.nn.relu(conv2d(x, weights['W_conv_b7_1'],1) + biases['b_conv_b7_1'])
+	conv_b7_2 = tf.nn.relu(conv2d(x, weights['W_conv_b7_2'],1) + biases['b_conv_b7_2'])
+	conv_b7_3 = tf.nn.relu(conv2d(x, weights['W_conv_b7_3'],1) + biases['b_conv_b7_3'])
 	#block8
-	conv_b8_1 = tf.nn.relu(tf.nn.conv2d_transpose(x,  weights['W_conv_b8_1']) + biases['b_conv_b8_1'], [1,64,64,1], strides=[1, 2, 2, 1], padding='SAME'))
-	conv_b8_2 = tf.nn.relu(conv2d(x, weights['W_conv_b8_2']) + biases['b_conv_b8_2'],1)
-	conv_b8_3 = tf.nn.relu(conv2d(x, weights['W_conv_b8_3']) + biases['b_conv_b8_3'],1)
+	conv_b8_1 = tf.nn.relu(tf.nn.conv2d_transpose(x,  weights['W_conv_b8_1']) + biases['b_conv_b8_1'], [1,64,64,1], strides=[1, 2, 2, 1], padding='SAME')
+	conv_b8_2 = tf.nn.relu(conv2d(x, weights['W_conv_b8_2'],1) + biases['b_conv_b8_2'])
+	conv_b8_3 = tf.nn.relu(conv2d(x, weights['W_conv_b8_3'],1) + biases['b_conv_b8_3'])
 	#conv_b8_4 = tf.nn.relu(tf.nn.conv2d_transpose(x, weights['W_conv_b8_4']) + biases['b_conv_b8_4'], [1,256,256,1], strides=[1, 4, 4, 1], padding='SAME'))
 	
-	output = tf.nn.softmax(conv2d(x, weights['out']) + biases['out'],1)
+	output = tf.nn.softmax(conv2d(x, weights['out'],1) + biases['out'])
 	return output
 
 
@@ -159,5 +159,5 @@ def decode(data_l, conv8_313, rebalance=1):
 
   return img_rgb
 
-  image = decode(X_l,convolutional_neural_network(X_l))
-  imsave('color.jpg', image)
+image = decode(X_l,convolutional_neural_network(X_l))
+imsave('color.jpg', image)
