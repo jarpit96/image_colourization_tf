@@ -1,5 +1,16 @@
 import tensorflow as tf
 import numpy as np
+from skimage.io import imsave
+import cv2
+
+img = cv2.imread('gray.jpg')
+if len(img.shape) == 3:
+  img = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+
+img = img[None, :, :, None]
+X_l = (img.astype(dtype=np.float32)) / 255.0 * 100 - 50
+
+
 
 def weight_variable(shape):
   initial = tf.truncated_normal(shape, stddev=0.1)
@@ -45,7 +56,7 @@ def convolutional_neural_network(x):#, keep_rate):
 	    'W_conv_b8_1': weight_variable([4, 4, 512, 256]),
 	    'W_conv_b8_2': weight_variable([3, 3, 256, 256]),
 	    'W_conv_b2_3': weight_variable([3, 3, 256, 256]),
-	    'W_conv_b2_4': weight_variable([3, 3, 256, 256]),
+	    #'W_conv_b2_4': weight_variable([3, 3, 256, 256]),
 	    
 	    'out': weight_variable([1, 1, 256, 313])
 	}
@@ -81,7 +92,7 @@ def convolutional_neural_network(x):#, keep_rate):
         'b_conv_b8_1': bias_variable([256]),
         'b_conv_b8_2': bias_variable([256]),
         'b_conv_b8_3': bias_variable([256]),
-        'b_conv_b8_4': bias_variable([256]),
+        #'b_conv_b8_4': bias_variable([256]),
 
         'out': bias_variable([313])
         
@@ -117,7 +128,36 @@ def convolutional_neural_network(x):#, keep_rate):
 	conv_b8_1 = tf.nn.relu(tf.nn.conv2d_transpose(x,  weights['W_conv_b8_1']) + biases['b_conv_b8_1'], [1,64,64,1], strides=[1, 2, 2, 1], padding='SAME'))
 	conv_b8_2 = tf.nn.relu(conv2d(x, weights['W_conv_b8_2']) + biases['b_conv_b8_2'],1)
 	conv_b8_3 = tf.nn.relu(conv2d(x, weights['W_conv_b8_3']) + biases['b_conv_b8_3'],1)
-	conv_b8_4 = tf.nn.relu(tf.nn.conv2d_transpose(x, weights['W_conv_b8_4']) + biases['b_conv_b8_4'], [1,256,256,1], strides=[1, 4, 4, 1], padding='SAME'))
+	#conv_b8_4 = tf.nn.relu(tf.nn.conv2d_transpose(x, weights['W_conv_b8_4']) + biases['b_conv_b8_4'], [1,256,256,1], strides=[1, 4, 4, 1], padding='SAME'))
 	
 	output = tf.nn.softmax(conv2d(x, weights['out']) + biases['out'],1)
 	return output
+
+
+def decode(data_l, conv8_313, rebalance=1):
+  """
+  Args:
+    data_l   : [1, height, width, 1]
+    conv8_313: [1, height/4, width/4, 313]
+  Returns:
+    img_rgb  : [height, width, 3]
+  """
+  data_l = data_l + 50
+  _, height, width, _ = data_l.shape
+  data_l = data_l[0, :, :, :]
+  conv8_313 = conv8_313[0, :, :, :]
+  enc_dir = './resources'
+  conv8_313_rh = conv8_313 * rebalance
+  class8_313_rh = softmax(conv8_313_rh)
+
+  cc = np.load(os.path.join(enc_dir, 'pts_in_hull.npy'))
+  
+  data_ab = np.dot(class8_313_rh, cc)
+  data_ab = resize(data_ab, (height, width))
+  img_lab = np.concatenate((data_l, data_ab), axis=-1)
+  img_rgb = color.lab2rgb(img_lab)
+
+  return img_rgb
+
+  image = decode(X_l,convolutional_neural_network(X_l))
+  imsave('color.jpg', image)
