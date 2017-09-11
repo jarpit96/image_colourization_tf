@@ -29,8 +29,8 @@ def reduceSize(image, n_width, n_height):
 
 def resampleImage(name):
 
-	print name
-	print(os.getcwd())
+	# print name
+	# print(os.getcwd())
 	img = cv2.imread(name)
 	# print(img)
 
