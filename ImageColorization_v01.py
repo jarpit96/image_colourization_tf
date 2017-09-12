@@ -11,8 +11,7 @@ batch_size = 10
 test_percentage = 10
 validation_percentage = 10
 data_loader = dataset_loader.dataset(batch_size = batch_size, test_percentage = test_percentage, validation_percentage = validation_percentage)
-
-train_size = 100
+train_size = data_loader.n_train_records
 pprint = pprint.PrettyPrinter(indent=4)
 
 img = cv2.imread('gray.jpg')
@@ -185,6 +184,40 @@ def decode(data_l, conv8_313, rebalance=1):
     return img_rgb
 
 
+def find_closest(a,b):
+    pts = np.load("resources/pts_in_hull.npy")
+    ans = 0
+    dist = (a-pts[0][0])**2 + (b-pts[0][1])**2
+    for i in range(len(pts)):
+        temp = (a-pts[i][0])**2 + (b-pts[i][1])**2
+        if temp < dist:
+            dist = temp
+            ans = i
+    return ans
+
+
+def encode(batch_y):
+    height = 64
+    width = 64
+    for y in batch_y:
+        y = resize(y,(height,width))
+    updated_batch_y = []
+    updated_y = []
+    for y in batch_y:
+        for i in range(height):
+            row = []
+            for j in range(width):
+                a = y[i][j][1]
+                b = y[i][j][2]
+                cl = np.zeros(313)
+                cl[find_closest(a,b)] = 1
+                row.append(cl)
+                updated_batch_y.append(row)
+    return np.array(updated_batch_y)
+
+
+
+
 def train_neural_network(X):
     prediction = convolutional_neural_network(X)
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=Y_l))
@@ -203,7 +236,18 @@ def train_neural_network(X):
         accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
         print('Accuracy:', accuracy.eval({X: X_l, Y: Y_l}))
 
-train_neural_network(X_l)
+#train_neural_network(X_l)
+image = cv2.imread('sample.JPEG')
+images = []
+images.append(image)
+images = np.array(images)
+image_l, images = data_loader.rgb2lab(images)
+#image_l = images[:,:,:,0:1]
+
+pprint.pprint(images.shape)
+images = encode(images)
+pprint.pprint(images.shape)
+image = decode(image_l[0], images[0])
 
 #image = decode(X_l, sess.run(prediction))
-#imsave('color.jpg', image)
+imsave('color123.jpg', image)
