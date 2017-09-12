@@ -25,7 +25,7 @@ class dataset():
 		'''
 		Get the Next Training Batch
 		Return:
-		data_l(NxHxWX1), data_ab(NxHxWX2), data(RGB)(NxHxWX3) retuned for batch Size
+		data_l(NxHxWX1), data_ab(NxHxWX2)retuned for batch Size
 		'''
 		self.currentBatch+=1
 		images =[]
@@ -40,7 +40,7 @@ class dataset():
 		'''
 		Get the Whole test Data
 		Return:
-		data_l(NxHxWX1), data_ab(NxHxWX2), data(RGB)(NxHxWX3) retuned for test Data Division
+		data_l(NxHxWX1), data_lab(NxHxWX3) retuned for test Data Division
 		'''
 		image_urls = self.image_names[int(self.n_train_records):int(self.n_test_records)+int(self.n_train_records)]
 		images = []
@@ -52,7 +52,7 @@ class dataset():
 		'''
 		Get the Whole Validation Data
 		Return:
-		data_l(NxHxWX1), data_ab(NxHxWX2), data(RGB)(NxHxWX3) retuned for Validation Data Division
+		data_l(NxHxWX1), data_lab(NxHxWX3) retuned for Validation Data Division
 		'''
 
 		image_urls = self.image_names[int(self.n_test_records)+int(self.n_train_records):len(self.image_names)]
@@ -122,17 +122,16 @@ class dataset():
 		data: RGB batch (N * H * W * 3)
 		Return:
 		data_l: L channel batch (N * H * W * 1)
-		data_ab: ab channel batch (N*H*W*2)
-		data: Original Image Data(N*H*W*3)
+		data_lab: lab channel batch (N*H*W*3)
 		'''
-		print data.shape
+		# print data.shape
 		N = data.shape[0]
 		H = data.shape[1]
 		W = data.shape[2]
 
 		#rgb2lab
 		img_lab = color.rgb2lab(data)
-		print img_lab.shape
+		# print img_lab.shape
 		# display_image(img_lab)
 
 		#slice
@@ -144,10 +143,10 @@ class dataset():
 		#scale img_l to [-50, 50]
 		data_l = img_l - 50
 
-		print data_l.shape
-		print data_ab.shape
-		print data.shape
-		return data_l, data_ab, data 
+		# print data_l.shape
+		# print data_ab.shape
+		# print data.shape
+		return data_l, img_lab
 
 # obj = dataset(batch_size = 100)
 # obj.getNextBatch()
