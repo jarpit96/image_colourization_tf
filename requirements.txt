@@ -2,3 +2,4 @@ tensorflow 1.3.0
 opencv 2.4.13
 pip install configparser
 pip install scikit-image
+pip install scikit-learn
