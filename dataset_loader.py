@@ -25,7 +25,7 @@ class dataset():
 		'''
 		Get the Next Training Batch
 		Return:
-		data_l(NxHxWX1), data_ab(NxHxWX2)retuned for batch Size
+		data_l(NxHxWX1), data_lab(NxHxWX3)retuned for batch Size
 		'''
 		self.currentBatch+=1
 		images =[]
@@ -34,7 +34,7 @@ class dataset():
 			images.append(self.getImage256(self.image_names[image_index]))
 
 		print np.array(images).shape
-		return self.rgb2lab(np.array(images))
+		return self.rgb2lab(np.array(images, dtype=np.float32))
 
 	def getTestData(self):
 		'''
@@ -46,7 +46,7 @@ class dataset():
 		images = []
 		for image in image_urls:
 			images.append(self.getImage256(image))
-		return self.rgb2lab(np.array(images))
+		return self.rgb2lab(np.array(images, dtype=np.float32))
 
 	def getValidationData(self):
 		'''
@@ -59,7 +59,7 @@ class dataset():
 		images = []
 		for image in image_urls:
 			images.append(self.getImage256(image))
-		return self.rgb2lab(np.array(images))
+		return self.rgb2lab(np.array(images, dtype=np.float32))
 
 
 	def input_array(self,path):
