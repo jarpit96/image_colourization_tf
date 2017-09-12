@@ -5,7 +5,14 @@ from skimage.io import imsave
 import cv2, os
 from skimage.transform import resize
 import pprint
+import dataset_loader
 
+batch_size = 10
+test_percentage = 10
+validation_percentage = 10
+data_loader = dataset_loader.dataset(batch_size = batch_size, test_percentage = test_percentage, validation_percentage = validation_percentage)
+
+train_size = 100
 pprint = pprint.PrettyPrinter(indent=4)
 
 img = cv2.imread('gray.jpg')
@@ -14,6 +21,10 @@ if len(img.shape) == 3:
 
 img = img[None, :, :, None]
 X_l = (img.astype(dtype=np.float32)) / 255.0 * 100 - 50
+Y_l = []
+
+X = tf.placeholder(tf.float32,shape=[])
+Y = tf.placeholder(tf.float32,shape=[])
 
 
 def weight_variable(shape):
@@ -174,8 +185,25 @@ def decode(data_l, conv8_313, rebalance=1):
     return img_rgb
 
 
-prediction = convolutional_neural_network(X_l)
-with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
-    image = decode(X_l, sess.run(prediction))
-    imsave('color.jpg', image)
+def train_neural_network(X):
+    prediction = convolutional_neural_network(X)
+    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=Y_l))
+    optimizer = tf.train.AdamOptimizer().minimize(cost)
+    hm_epochs = 1000
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+        for epoch in range(hm_epochs):
+            epoch_loss = 0
+            for _ in range(int(train_size / batch_size)):
+                epoch_x, epoch_y = data_loader.getNextBatch()
+                _, c = sess.run([optimizer, cost], feed_dict={X: epoch_x, Y: epoch_y})
+                epoch_loss += c
+            print('Epoch', epoch, 'completed out of', hm_epochs, 'loss:', epoch_loss)
+        correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(Y, 1))
+        accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
+        print('Accuracy:', accuracy.eval({X: X_l, Y: Y_l}))
+
+train_neural_network(X_l)
+
+#image = decode(X_l, sess.run(prediction))
+#imsave('color.jpg', image)
