@@ -1,6 +1,7 @@
 import cv2
 import os
 import numpy as np
+import h5py
 from skimage import color
 from random import shuffle
 
@@ -115,6 +116,19 @@ class dataset():
 		cv2.waitKey(0)
 		cv2.destroyAllWindows()
 
+	def storeDataLab(self):
+		images = []
+		for name in self.image_names:
+			images.append(self.getImage256(name))
+		print np.array(images).shape
+		
+		l, _ = self.rgb2lab(np.array(images))
+		print l.shape
+		del images[:]
+		h5f = h5py.File('lData.h5', 'w')
+		h5f.create_dataset('dataset_1', data=l)
+		h5f.close()
+
 	def rgb2lab(self,data):
 
 		'''RGB 2 Lab Color Space COnversion
@@ -147,6 +161,9 @@ class dataset():
 		# print data_ab.shape
 		# print data.shape
 		return data_l, img_lab
+
+# obj = dataset()
+# obj.storeDataLab()
 
 # obj = dataset(batch_size = 100)
 # obj.getNextBatch()
