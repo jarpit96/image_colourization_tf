@@ -201,6 +201,7 @@ def encode(batch_y):
     width = 64
     for y in batch_y:
         y = resize(y,(height,width))
+
     updated_batch_y = []
     updated_y = []
     for y in batch_y:
@@ -212,8 +213,8 @@ def encode(batch_y):
                 cl = np.zeros(313)
                 cl[find_closest(a,b)] = 1
                 row.append(cl)
-                updated_batch_y.append(row)
-    return np.array(updated_batch_y)
+            updated_batch_y.append(row)
+    return np.array([updated_batch_y])
 
 
 
@@ -247,7 +248,7 @@ image_l, images = data_loader.rgb2lab(images)
 pprint.pprint(images.shape)
 images = encode(images)
 pprint.pprint(images.shape)
-image = decode(image_l[0], images[0])
+image = decode(image_l, images, 2.63)
 
 #image = decode(X_l, sess.run(prediction))
 imsave('color123.jpg', image)
