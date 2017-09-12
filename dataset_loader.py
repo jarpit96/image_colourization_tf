@@ -6,7 +6,7 @@ from random import shuffle
 
 class dataset():
 
-	def __init__(self, batch_size,test_percentage = 20, validation_percentage =20, path = "ILSVRCData/input.txt"):
+	def __init__(self, batch_size=100,test_percentage = 20, validation_percentage =20, path = "ILSVRCData/input.txt"):
 		self.batch_size = batch_size
 		self.image_names = self.input_array(path)
 		
@@ -22,6 +22,11 @@ class dataset():
 		self.n_batches = int(self.n_train_records/batch_size)
 
 	def getNextBatch(self):
+		'''
+		Get the Next Training Batch
+		Return:
+		data_l(NxHxWX1), data_ab(NxHxWX2), data(RGB)(NxHxWX3) retuned for batch Size
+		'''
 		self.currentBatch+=1
 		images =[]
 		print("Start",(self.currentBatch-1)*(self.batch_size), "\tEnd:", min(self.currentBatch*self.batch_size, self.n_train_records))
@@ -32,6 +37,11 @@ class dataset():
 		return self.rgb2lab(np.array(images))
 
 	def getTestData(self):
+		'''
+		Get the Whole test Data
+		Return:
+		data_l(NxHxWX1), data_ab(NxHxWX2), data(RGB)(NxHxWX3) retuned for test Data Division
+		'''
 		image_urls = self.image_names[int(self.n_train_records):int(self.n_test_records)+int(self.n_train_records)]
 		images = []
 		for image in image_urls:
@@ -39,6 +49,11 @@ class dataset():
 		return self.rgb2lab(np.array(images))
 
 	def getValidationData(self):
+		'''
+		Get the Whole Validation Data
+		Return:
+		data_l(NxHxWX1), data_ab(NxHxWX2), data(RGB)(NxHxWX3) retuned for Validation Data Division
+		'''
 
 		image_urls = self.image_names[int(self.n_test_records)+int(self.n_train_records):len(self.image_names)]
 		images = []
@@ -48,6 +63,13 @@ class dataset():
 
 
 	def input_array(self,path):
+		'''
+		Read The text File containing image Name
+		Args:
+		path:path to image_name file
+		Return:
+		lines: List of image_names
+		'''
 		lines = []
 		filePath = os.path.join(os.getcwd(), path)
 		with open(filePath) as f:
@@ -58,11 +80,25 @@ class dataset():
 		return lines
 
 	def getImage256(self,name, path ="ILSVRCData/data256x256/", fileExtension = ".JPEG"):
+		'''
+		Get Image from 256x256 folder with name
+		Args:
+		name:Image Name
+		path=Path to Image Data Folder
+		fileExtension = image file extension
+		Return:
+		image data in RGB channels
+		'''
 		# print(os.path.join(os.getcwd(), path+name))
 		# print os.path.isfile(os.path.join(os.getcwd(), path+name+fileExtension))
 		return cv2.imread(os.path.join(os.getcwd(), path+name+fileExtension))
 
 	def display_image(self,img):
+		'''
+		Display Image using cv
+		Args:
+		img: Image Data
+		'''
 		screen_res = 1280, 720
 		scale_width = screen_res[0] / img.shape[1]
 		scale_height = screen_res[1] / img.shape[0]
@@ -81,12 +117,13 @@ class dataset():
 
 	def rgb2lab(self,data):
 
-		'''Preprocess
+		'''RGB 2 Lab Color Space COnversion
 		Args: 
 		data: RGB batch (N * H * W * 3)
 		Return:
 		data_l: L channel batch (N * H * W * 1)
-		data_ab: ab channel batch (N*H*W*1)
+		data_ab: ab channel batch (N*H*W*2)
+		data: Original Image Data(N*H*W*3)
 		'''
 		print data.shape
 		N = data.shape[0]
