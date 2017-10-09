@@ -13,8 +13,9 @@ validation_percentage = 10
 data_loader = dataset_loader.dataset(batch_size = batch_size, test_percentage = test_percentage, validation_percentage = validation_percentage)
 train_size = data_loader.n_train_records
 pprint = pprint.PrettyPrinter(indent=4)
+dirName = "generatedPics/"
 
-img = cv2.imread('gray.jpg')
+img = cv2.imread(dirName +'gray.jpg')
 if len(img.shape) == 3:
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
@@ -173,11 +174,16 @@ def decode(data_l, conv8_313, rebalance=1):
     conv8_313 = conv8_313[0, :, :, :]
     enc_dir = './resources'
     conv8_313_rh = conv8_313 * rebalance
+
     class8_313_rh = softmax(conv8_313_rh)
+    #print "313: ", class8_313_rh[0][0]
+
     cc = np.load(os.path.join(enc_dir, 'pts_in_hull.npy'))
 
     data_ab = np.dot(class8_313_rh, cc)
     data_ab = resize(data_ab, (height, width))
+    #print(data_ab)
+    #data_ab = data_ab + 50
     img_lab = np.concatenate((data_l, data_ab), axis=-1)
     img_rgb = color.lab2rgb(img_lab)
 
@@ -188,30 +194,60 @@ def find_closest(a,b):
     pts = np.load("resources/pts_in_hull.npy")
     ans = 0
     dist = (a-pts[0][0])**2 + (b-pts[0][1])**2
+    distances = []
     for i in range(len(pts)):
         temp = (a-pts[i][0])**2 + (b-pts[i][1])**2
+        distances.append([temp,i])
         if temp < dist:
             dist = temp
             ans = i
-    return ans
+    distances = sorted(distances, key=lambda x: x[0])
+    return distances
 
 
 def encode(batch_y):
     height = 64
     width = 64
-    for y in batch_y:
-        y = resize(y,(height,width))
+
+    compressed_y = []
+    for i in range(len(batch_y)):
+        temp = resize(batch_y[i],(height,width))
+        compressed_y.append(temp)
+    compressed_y = np.array(compressed_y)
 
     updated_batch_y = []
     updated_y = []
-    for y in batch_y:
+    for y in compressed_y:
         for i in range(height):
             row = []
             for j in range(width):
                 a = y[i][j][1]
                 b = y[i][j][2]
                 cl = np.zeros(313)
-                cl[find_closest(a,b)] = 1
+                # maxima = find_closest(a,b)
+                # cl[maxima[0][1]] = 10
+                # cl[maxima[1][1]] = 900
+                # cl[maxima[2][1]] = 900
+                # cl[maxima[3][1]] = 900
+                # cl[maxima[4][1]] = 900
+                # cl[maxima[5][1]] = 900
+                # cl[maxima[6][1]] = 900
+                # cl[maxima[7][1]] = 900
+                # cl[maxima[8][1]] = 900
+                # cl[maxima[9][1]] = 900
+                # row.append(cl)
+                sigma = 5
+                neighbours = find_closest(a,b)[:10]
+                dists = []
+                indices = []
+                for dist in neighbours:
+                    dists.append(dist[0])
+                    indices.append(dist[1])
+                dists = np.array(dists)
+                wts = np.exp(dists / (2 * sigma ** 2))
+                wts = wts / np.sum(wts)
+                for index, w in zip(indices, wts):
+                    cl[index] = w+10
                 row.append(cl)
             updated_batch_y.append(row)
     return np.array([updated_batch_y])
@@ -238,7 +274,9 @@ def train_neural_network(X):
         print('Accuracy:', accuracy.eval({X: X_l, Y: Y_l}))
 
 #train_neural_network(X_l)
-image = cv2.imread('sample.JPEG')
+
+image = cv2.imread(dirName+'sample.JPEG')
+image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 images = []
 images.append(image)
 images = np.array(images)
@@ -251,4 +289,4 @@ pprint.pprint(images.shape)
 image = decode(image_l, images, 2.63)
 
 #image = decode(X_l, sess.run(prediction))
-imsave('color123.jpg', image)
+imsave(dirName + 'sample1.jpeg', image)
