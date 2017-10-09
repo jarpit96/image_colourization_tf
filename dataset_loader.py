@@ -92,7 +92,7 @@ class dataset():
 		'''
 		# print(os.path.join(os.getcwd(), path+name))
 		# print os.path.isfile(os.path.join(os.getcwd(), path+name+fileExtension))
-		return cv2.imread(os.path.join(os.getcwd(), path+name+fileExtension))
+		return cv2.cvtColor(cv2.imread(os.path.join(os.getcwd(), path+name+fileExtension)), cv2.COLOR_BGR2RGB)
 
 	def display_image(self,img):
 		'''
