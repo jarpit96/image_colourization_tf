@@ -21,7 +21,6 @@ def bias_variable(shape):
 def conv2d(x, W, s):
     return tf.nn.conv2d(x, W, strides=[1, s, s, 1], padding='SAME')
 
-#TODO verify for batch
 def convolutional_neural_network(x):  # , keep_rate):
     weights = {
         # block1
@@ -123,6 +122,7 @@ def convolutional_neural_network(x):  # , keep_rate):
     conv_b7_2 = tf.nn.relu(conv2d(conv_b7_1, weights['W_conv_b7_2'], 1) + biases['b_conv_b7_2'])
     conv_b7_3 = tf.nn.relu(conv2d(conv_b7_2, weights['W_conv_b7_3'], 1) + biases['b_conv_b7_3'])
     # block8
+    #TODO: Verify usage of batch size
     conv_b8_1 = tf.nn.relu(tf.nn.conv2d_transpose(value = conv_b7_3,output_shape=[batch_size, 64, 64, 256], filter = weights['W_conv_b8_1'], strides=[1, 2, 2, 1],padding='SAME') + biases['b_conv_b8_1'])
     conv_b8_2 = tf.nn.relu(conv2d(conv_b8_1, weights['W_conv_b8_2'], 1) + biases['b_conv_b8_2'])
     conv_b8_3 = tf.nn.relu(conv2d(conv_b8_2, weights['W_conv_b8_3'], 1) + biases['b_conv_b8_3'])
@@ -149,6 +149,8 @@ def decode(data_l, conv8_313, rebalance=1):
     # conv8_313 = np.array(conv8_313)
     data_l = data_l + 50
     _, height, width, _ = data_l.shape
+    height = int(height)
+    width = int(width)
     data_l = data_l[0, :, :, :]
     conv8_313 = conv8_313[0, :, :, :]
     conv8_313 = np.array(conv8_313)
@@ -253,7 +255,7 @@ def test_encode():
     # image = decode(X_l, sess.run(prediction))
     imsave(dirName + 'sample2.jpeg', image)
 
-def test_cnn():
+def test_cnn(sess):
     image = cv2.imread(dirName + 'sample.JPEG')
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     images = []
@@ -263,16 +265,20 @@ def test_cnn():
 
     image_l, images = data_loader.rgb2lab(images)
     images = tf.cast(images, tf.float32)
-    image_l = tf.cast(image_l, tf.float32)
-
+    # image_l = tf.cast(image_l, tf.float32)
+    image_l = np.array(image_l, dtype=np.float32)
     # image_l = images[:,:,:,0:1]
     encoded_img = convolutional_neural_network(image_l)
+    #TODO: Verify if resets learned weights and biases
+    sess.run(tf.global_variables_initializer())
+    encoded_img_val = sess.run(encoded_img)
+    # image_l = np.array(sess.run([image_l]))
 
-    image = decode(image_l,encoded_img,2.63)
+    image = decode(image_l,encoded_img_val,2.63)
     imsave(dirName + 'sample2.jpeg', image)
 
 
-batch_size = 2
+batch_size = 1
 test_percentage = 40
 validation_percentage = 40
 data_loader = dataset_loader.dataset(batch_size = batch_size, test_percentage = test_percentage, validation_percentage = validation_percentage)
@@ -283,12 +289,13 @@ dirName = "generatedPics/"
 X = tf.placeholder(tf.float32,shape=[None,256,256,1])
 Y = tf.placeholder(tf.float32,shape=[None,64,64,313])
 
-
+#TODO: Fix Batch size needs to be equal for train and test
 def train_neural_network(X):
 
     prediction = convolutional_neural_network(X)
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=Y))
     optimizer = tf.train.AdamOptimizer().minimize(cost)
+    #FIXME: Epoch functioing
     hm_epochs = 1
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -300,7 +307,7 @@ def train_neural_network(X):
                 _, c = sess.run([optimizer, cost], feed_dict={X: epoch_x, Y: encoded_epoch_y})
                 epoch_loss += c
             print('Epoch', epoch, 'completed out of', hm_epochs, 'loss:', epoch_loss)
-        test_cnn()
+        test_cnn(sess)
         # correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(Y, 1))
         # accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
         #print('Accuracy:', accuracy.eval({X: X, Y: Y}))
