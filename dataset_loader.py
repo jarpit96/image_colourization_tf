@@ -48,7 +48,7 @@ class dataset():
         images = []
         for image in image_urls:
             images.append(self.getImage256(image))
-        return self.rgb2lab(np.array(images, dtype=np.float32))
+        return self.rgb2lab(np.array(images))
 
     def getValidationData(self):
         '''

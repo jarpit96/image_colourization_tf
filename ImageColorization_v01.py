@@ -146,10 +146,12 @@ def decode(data_l, conv8_313, rebalance=1):
     Returns:
       img_rgb  : [height, width, 3]
     """
+    # conv8_313 = np.array(conv8_313)
     data_l = data_l + 50
     _, height, width, _ = data_l.shape
     data_l = data_l[0, :, :, :]
     conv8_313 = conv8_313[0, :, :, :]
+    conv8_313 = np.array(conv8_313)
     enc_dir = './resources'
     conv8_313_rh = conv8_313 * rebalance
 
@@ -256,17 +258,23 @@ def test_cnn():
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     images = []
     images.append(image)
+
     images = np.array(images)
+
     image_l, images = data_loader.rgb2lab(images)
+    images = tf.cast(images, tf.float32)
+    image_l = tf.cast(image_l, tf.float32)
+
     # image_l = images[:,:,:,0:1]
     encoded_img = convolutional_neural_network(image_l)
+
     image = decode(image_l,encoded_img,2.63)
     imsave(dirName + 'sample2.jpeg', image)
 
 
 batch_size = 2
-test_percentage = 10
-validation_percentage = 10
+test_percentage = 40
+validation_percentage = 40
 data_loader = dataset_loader.dataset(batch_size = batch_size, test_percentage = test_percentage, validation_percentage = validation_percentage)
 train_size = data_loader.n_train_records
 pprint = pprint.PrettyPrinter(indent=4)
@@ -281,7 +289,7 @@ def train_neural_network(X):
     prediction = convolutional_neural_network(X)
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=Y))
     optimizer = tf.train.AdamOptimizer().minimize(cost)
-    hm_epochs = 10
+    hm_epochs = 1
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         for epoch in range(hm_epochs):
@@ -292,9 +300,10 @@ def train_neural_network(X):
                 _, c = sess.run([optimizer, cost], feed_dict={X: epoch_x, Y: encoded_epoch_y})
                 epoch_loss += c
             print('Epoch', epoch, 'completed out of', hm_epochs, 'loss:', epoch_loss)
+        test_cnn()
         # correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(Y, 1))
         # accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
         #print('Accuracy:', accuracy.eval({X: X, Y: Y}))
 
 train_neural_network(X)
-test_cnn()
+
