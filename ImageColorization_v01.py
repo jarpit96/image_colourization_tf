@@ -17,83 +17,85 @@ def bias_variable(shape):
     initial = tf.constant(0.1, shape=shape)
     return tf.Variable(initial)
 
+weights = {
+    # block1
+    'W_conv_b1_1': weight_variable([3, 3, 1, 64]),
+    'W_conv_b1_2': weight_variable([3, 3, 64, 64]),
+    # block2
+    'W_conv_b2_1': weight_variable([3, 3, 64, 128]),
+    'W_conv_b2_2': weight_variable([3, 3, 128, 128]),
+    # block3
+    'W_conv_b3_1': weight_variable([3, 3, 128, 256]),
+    'W_conv_b3_2': weight_variable([3, 3, 256, 256]),
+    'W_conv_b3_3': weight_variable([3, 3, 256, 256]),
+    # block4
+    'W_conv_b4_1': weight_variable([3, 3, 256, 512]),
+    'W_conv_b4_2': weight_variable([3, 3, 512, 512]),
+    'W_conv_b4_3': weight_variable([3, 3, 512, 512]),
+    # block5
+    'W_conv_b5_1': weight_variable([3, 3, 512, 512]),
+    'W_conv_b5_2': weight_variable([3, 3, 512, 512]),
+    'W_conv_b5_3': weight_variable([3, 3, 512, 512]),
+    # block6
+    'W_conv_b6_1': weight_variable([3, 3, 512, 512]),
+    'W_conv_b6_2': weight_variable([3, 3, 512, 512]),
+    'W_conv_b6_3': weight_variable([3, 3, 512, 512]),
+    # block7
+    'W_conv_b7_1': weight_variable([3, 3, 512, 512]),
+    'W_conv_b7_2': weight_variable([3, 3, 512, 512]),
+    'W_conv_b7_3': weight_variable([3, 3, 512, 256]),
+    # block8
+    'W_conv_b8_1': weight_variable([4, 4, 256, 256]),
+    'W_conv_b8_2': weight_variable([3, 3, 256, 256]),
+    'W_conv_b8_3': weight_variable([3, 3, 256, 256]),
+    # 'W_conv_b2_4': weight_variable([3, 3, 256, 256]),
+
+    'out': weight_variable([1, 1, 256, 313])
+}
+
+biases = {
+    # block1
+    'b_conv_b1_1': bias_variable([64]),
+    'b_conv_b1_2': bias_variable([64]),
+    # block2
+    'b_conv_b2_1': bias_variable([128]),
+    'b_conv_b2_2': bias_variable([128]),
+    # block3
+    'b_conv_b3_1': bias_variable([256]),
+    'b_conv_b3_2': bias_variable([256]),
+    'b_conv_b3_3': bias_variable([256]),
+    # block4
+    'b_conv_b4_1': bias_variable([512]),
+    'b_conv_b4_2': bias_variable([512]),
+    'b_conv_b4_3': bias_variable([512]),
+    # block5
+    'b_conv_b5_1': bias_variable([512]),
+    'b_conv_b5_2': bias_variable([512]),
+    'b_conv_b5_3': bias_variable([512]),
+    # block6
+    'b_conv_b6_1': bias_variable([512]),
+    'b_conv_b6_2': bias_variable([512]),
+    'b_conv_b6_3': bias_variable([512]),
+    # block7
+    'b_conv_b7_1': bias_variable([512]),
+    'b_conv_b7_2': bias_variable([512]),
+    'b_conv_b7_3': bias_variable([256]),
+    # block8
+    'b_conv_b8_1': bias_variable([256]),
+    'b_conv_b8_2': bias_variable([256]),
+    'b_conv_b8_3': bias_variable([256]),
+    # 'b_conv_b8_4': bias_variable([256]),
+
+    'out': bias_variable([313])
+
+}
+#FIXME: Make init function for weights
+
 
 def conv2d(x, W, s):
     return tf.nn.conv2d(x, W, strides=[1, s, s, 1], padding='SAME')
 
 def convolutional_neural_network(x):  # , keep_rate):
-    weights = {
-        # block1
-        'W_conv_b1_1': weight_variable([3, 3, 1, 64]),
-        'W_conv_b1_2': weight_variable([3, 3, 64, 64]),
-        # block2
-        'W_conv_b2_1': weight_variable([3, 3, 64, 128]),
-        'W_conv_b2_2': weight_variable([3, 3, 128, 128]),
-        # block3
-        'W_conv_b3_1': weight_variable([3, 3, 128, 256]),
-        'W_conv_b3_2': weight_variable([3, 3, 256, 256]),
-        'W_conv_b3_3': weight_variable([3, 3, 256, 256]),
-        # block4
-        'W_conv_b4_1': weight_variable([3, 3, 256, 512]),
-        'W_conv_b4_2': weight_variable([3, 3, 512, 512]),
-        'W_conv_b4_3': weight_variable([3, 3, 512, 512]),
-        # block5
-        'W_conv_b5_1': weight_variable([3, 3, 512, 512]),
-        'W_conv_b5_2': weight_variable([3, 3, 512, 512]),
-        'W_conv_b5_3': weight_variable([3, 3, 512, 512]),
-        # block6
-        'W_conv_b6_1': weight_variable([3, 3, 512, 512]),
-        'W_conv_b6_2': weight_variable([3, 3, 512, 512]),
-        'W_conv_b6_3': weight_variable([3, 3, 512, 512]),
-        # block7
-        'W_conv_b7_1': weight_variable([3, 3, 512, 512]),
-        'W_conv_b7_2': weight_variable([3, 3, 512, 512]),
-        'W_conv_b7_3': weight_variable([3, 3, 512, 256]),
-        # block8
-        'W_conv_b8_1': weight_variable([4, 4, 256, 256]),
-        'W_conv_b8_2': weight_variable([3, 3, 256, 256]),
-        'W_conv_b8_3': weight_variable([3, 3, 256, 256]),
-        # 'W_conv_b2_4': weight_variable([3, 3, 256, 256]),
-
-        'out': weight_variable([1, 1, 256, 313])
-    }
-
-    biases = {
-        # block1
-        'b_conv_b1_1': bias_variable([64]),
-        'b_conv_b1_2': bias_variable([64]),
-        # block2
-        'b_conv_b2_1': bias_variable([128]),
-        'b_conv_b2_2': bias_variable([128]),
-        # block3
-        'b_conv_b3_1': bias_variable([256]),
-        'b_conv_b3_2': bias_variable([256]),
-        'b_conv_b3_3': bias_variable([256]),
-        # block4
-        'b_conv_b4_1': bias_variable([512]),
-        'b_conv_b4_2': bias_variable([512]),
-        'b_conv_b4_3': bias_variable([512]),
-        # block5
-        'b_conv_b5_1': bias_variable([512]),
-        'b_conv_b5_2': bias_variable([512]),
-        'b_conv_b5_3': bias_variable([512]),
-        # block6
-        'b_conv_b6_1': bias_variable([512]),
-        'b_conv_b6_2': bias_variable([512]),
-        'b_conv_b6_3': bias_variable([512]),
-        # block7
-        'b_conv_b7_1': bias_variable([512]),
-        'b_conv_b7_2': bias_variable([512]),
-        'b_conv_b7_3': bias_variable([256]),
-        # block8
-        'b_conv_b8_1': bias_variable([256]),
-        'b_conv_b8_2': bias_variable([256]),
-        'b_conv_b8_3': bias_variable([256]),
-        # 'b_conv_b8_4': bias_variable([256]),
-
-        'out': bias_variable([313])
-
-    }
     # Convolution Layers, using our function
     # block1
     conv_b1_1 = tf.nn.relu(conv2d(x, weights['W_conv_b1_1'], 1) + biases['b_conv_b1_1'])
@@ -269,8 +271,16 @@ def test_cnn(sess):
     image_l = np.array(image_l, dtype=np.float32)
     # image_l = images[:,:,:,0:1]
     encoded_img = convolutional_neural_network(image_l)
-    #TODO: Verify if resets learned weights and biases
-    sess.run(tf.global_variables_initializer())
+
+    print "Global Variables"
+    global_variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
+    print len(global_variables)
+    for v in global_variables:
+        print v
+
+    print(sess.run(tf.report_uninitialized_variables()))
+
+    # sess.run(tf.global_variables_initializer())
     encoded_img_val = sess.run(encoded_img)
     # image_l = np.array(sess.run([image_l]))
 
@@ -299,6 +309,7 @@ def train_neural_network(X):
     hm_epochs = 1
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
+
         for epoch in range(hm_epochs):
             epoch_loss = 0
             for _ in range(int(train_size / batch_size)):
@@ -307,6 +318,8 @@ def train_neural_network(X):
                 _, c = sess.run([optimizer, cost], feed_dict={X: epoch_x, Y: encoded_epoch_y})
                 epoch_loss += c
             print('Epoch', epoch, 'completed out of', hm_epochs, 'loss:', epoch_loss)
+        print "Before CNN Test: "
+        print(sess.run(tf.report_uninitialized_variables()))
         test_cnn(sess)
         # correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(Y, 1))
         # accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
