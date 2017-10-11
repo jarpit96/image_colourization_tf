@@ -12,7 +12,7 @@ class dataset():
         self.image_names = self.input_array(path)
         self.path = path
         shuffle(self.image_names)
-        print test_percentage
+        # print test_percentage
 
         self.n_train_records = int(len(self.image_names)*((100.0-int(test_percentage)-int(validation_percentage))/100.0))
         self.n_test_records = int(len(self.image_names)-self.n_train_records)*(test_percentage/float(test_percentage+validation_percentage))
@@ -30,11 +30,11 @@ class dataset():
         '''
         self.currentBatch+=1
         images =[]
-        print("Start",(self.currentBatch-1)*(self.batch_size), "\tEnd:", min(self.currentBatch*self.batch_size, self.n_train_records))
+        # print("Start",(self.currentBatch-1)*(self.batch_size), "\tEnd:", min(self.currentBatch*self.batch_size, self.n_train_records))
         for image_index in xrange((self.currentBatch-1)*(self.batch_size),min(self.currentBatch*self.batch_size, self.n_train_records)):
             images.append(self.getImage256(self.image_names[image_index]))
 
-        print np.array(images).shape
+        # print np.array(images).shape
         image_l, image_lab = self.rgb2lab(np.array(images))
         return image_l, image_lab
 
@@ -123,10 +123,10 @@ class dataset():
         images = []
         for name in self.image_names:
             images.append(self.getImage256(name))
-        print np.array(images).shape
+        # print np.array(images).shape
 
         l, _ = self.rgb2lab(np.array(images))
-        print l.shape
+        # print l.shape
         del images[:]
         h5f = h5py.File('lData.h5', 'w')
         h5f.create_dataset('dataset_1', data=l)

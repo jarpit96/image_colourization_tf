@@ -173,6 +173,11 @@ def decode(data_l, conv8_313, rebalance=1):
 
     return img_rgb
 
+def decode_batch(data_l, conv8_313, rebalance=1):
+    images_rgb = []
+    for (data_l_obj, conv8_313_obj) in zip(data_l, conv8_313):
+        images_rgb.append(decode(np.array([data_l_obj]), np.array([conv8_313_obj]), rebalance))
+    return images_rgb
 
 def find_closest(a,b):
     pts = np.load("resources/pts_in_hull.npy")
@@ -249,48 +254,51 @@ def test_encode():
     image_l, images = data_loader.rgb2lab(images)
     # image_l = images[:,:,:,0:1]
 
-    pprint.pprint(images.shape)
+    # pprint.pprint(images.shape)
     images = encode(images)
-    pprint.pprint(images.shape)
+    # pprint.pprint(images.shape)
     image = decode(image_l, images, 2.63)
 
     # image = decode(X_l, sess.run(prediction))
     imsave(dirName + 'sample2.jpeg', image)
 
 def test_cnn(sess):
-    image = cv2.imread(dirName + 'sample.JPEG')
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    images = []
-    images.append(image)
+    data_loader = dataset_loader.dataset(batch_size=batch_size, test_percentage=test_percentage,
+                                         validation_percentage=validation_percentage)
 
-    images = np.array(images)
+    image_l, image_lab = data_loader.getTestData()
 
-    image_l, images = data_loader.rgb2lab(images)
-    images = tf.cast(images, tf.float32)
-    # image_l = tf.cast(image_l, tf.float32)
+    # image = cv2.imread(dirName + 'sample.JPEG')
+    # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    # images = []
+    # images.append(image)
+    #
+    # images = np.array(images)
+    #
+    # image_l, images = data_loader.rgb2lab(images)
+    # images = tf.cast(images, tf.float32)
+    # # image_l = tf.cast(image_l, tf.float32)
     image_l = np.array(image_l, dtype=np.float32)
     # image_l = images[:,:,:,0:1]
     encoded_img = convolutional_neural_network(image_l)
-
-    print "Global Variables"
-    global_variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
-    print len(global_variables)
-    for v in global_variables:
-        print v
-
-    print(sess.run(tf.report_uninitialized_variables()))
 
     # sess.run(tf.global_variables_initializer())
     encoded_img_val = sess.run(encoded_img)
     # image_l = np.array(sess.run([image_l]))
 
-    image = decode(image_l,encoded_img_val,2.63)
-    imsave(dirName + 'sample2.jpeg', image)
+    images_rgb = decode_batch(image_l,encoded_img_val,2.63)
+    i = 0
+    for image_rgb in images_rgb:
+        i+=1
+        imsave(dirName + str(i) + 'Gen.jpeg', image_rgb)
+    i = 0
+    # for image_test in image_lab:
+    #     i+=1
+    #     imsave(dirName + str(i) + 'Test.jpeg', image_test)
 
-
-batch_size = 1
-test_percentage = 40
-validation_percentage = 40
+batch_size = 3
+test_percentage = 15
+validation_percentage = 10
 data_loader = dataset_loader.dataset(batch_size = batch_size, test_percentage = test_percentage, validation_percentage = validation_percentage)
 train_size = data_loader.n_train_records
 pprint = pprint.PrettyPrinter(indent=4)
@@ -304,22 +312,23 @@ def train_neural_network(X):
 
     prediction = convolutional_neural_network(X)
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=Y))
-    optimizer = tf.train.AdamOptimizer().minimize(cost)
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.000000000001).minimize(cost)
     #FIXME: Epoch functioing
-    hm_epochs = 1
+    hm_epochs = 5
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
 
         for epoch in range(hm_epochs):
             epoch_loss = 0
+            data_loader = dataset_loader.dataset(batch_size=batch_size, test_percentage=test_percentage,
+                                                 validation_percentage=validation_percentage)
             for _ in range(int(train_size / batch_size)):
                 epoch_x, epoch_y = data_loader.getNextBatch()
                 encoded_epoch_y = encode(epoch_y)
                 _, c = sess.run([optimizer, cost], feed_dict={X: epoch_x, Y: encoded_epoch_y})
+                print "Cost: ", c
                 epoch_loss += c
             print('Epoch', epoch, 'completed out of', hm_epochs, 'loss:', epoch_loss)
-        print "Before CNN Test: "
-        print(sess.run(tf.report_uninitialized_variables()))
         test_cnn(sess)
         # correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(Y, 1))
         # accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
