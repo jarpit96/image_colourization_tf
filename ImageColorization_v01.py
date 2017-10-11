@@ -6,7 +6,8 @@ import cv2, os
 from skimage.transform import resize
 import pprint
 import dataset_loader
-
+import sklearn.neighbors as nn
+import time
 
 def weight_variable(shape):
     initial = tf.truncated_normal(shape, stddev=0.1)
@@ -173,12 +174,15 @@ def decode(data_l, conv8_313, rebalance=1):
 
     return img_rgb
 
+
+#TODO: imporve efficiency - Make vectorized decode function
 def decode_batch(data_l, conv8_313, rebalance=1):
     images_rgb = []
     for (data_l_obj, conv8_313_obj) in zip(data_l, conv8_313):
         images_rgb.append(decode(np.array([data_l_obj]), np.array([conv8_313_obj]), rebalance))
     return images_rgb
 
+#TODO: improve efficiency - use sklearn nearestNeighbours
 def find_closest(a,b):
     pts = np.load("resources/pts_in_hull.npy")
     ans = 0
@@ -193,10 +197,14 @@ def find_closest(a,b):
     distances = sorted(distances, key=lambda x: x[0])
     return distances
 
-
+#TODO: improve efficiency - Vectorize operations
 def encode(batch_y):
     height = 64
     width = 64
+    NN = 10
+    enc_dir = './resources/'
+    sigma = 5
+    color_space = np.load(os.path.join(enc_dir, 'pts_in_hull.npy'))
 
     compressed_y = []
     for i in range(len(batch_y)):
@@ -226,13 +234,16 @@ def encode(batch_y):
                 # cl[maxima[8][1]] = 900
                 # cl[maxima[9][1]] = 900
                 # row.append(cl)
-                sigma = 5
-                neighbours = find_closest(a,b)[:10]
-                dists = []
-                indices = []
-                for dist in neighbours:
-                    dists.append(dist[0])
-                    indices.append(dist[1])
+
+                (dists, indices) = nn.NearestNeighbors(n_neighbors=NN, algorithm='ball_tree').fit(color_space).kneighbors(np.array([[a,b]]))
+
+                # neighbours = find_closest(a,b)[:10]
+                # dists = []
+                # indices = []
+                # for dist in neighbours:
+                #     dists.append(dist[0])
+                #     indices.append(dist[1])
+
                 dists = np.array(dists)
                 wts = np.exp(dists / (2 * sigma ** 2))
                 wts = wts / np.sum(wts)
@@ -241,9 +252,9 @@ def encode(batch_y):
                 row.append(cl)
             updated_y.append(row)
         updated_batch_y.append(updated_y)
-        tempa = np.array(updated_y)
-    tempb = np.array(updated_batch_y)
-    return tempb
+        updated_y = np.array(updated_y)
+    updated_batch_y = np.array(updated_batch_y)
+    return updated_batch_y
 
 def test_encode():
     image = cv2.imread(dirName + 'sample.JPEG')
@@ -263,10 +274,10 @@ def test_encode():
     imsave(dirName + 'sample2.jpeg', image)
 
 def test_cnn(sess):
-    data_loader = dataset_loader.dataset(batch_size=batch_size, test_percentage=test_percentage,
+    data_loader_test_data = dataset_loader.dataset(batch_size=batch_size, test_percentage=test_percentage,
                                          validation_percentage=validation_percentage)
 
-    image_l, image_lab = data_loader.getTestData()
+    image_l, image_lab = data_loader_test_data.getTestData()
 
     # image = cv2.imread(dirName + 'sample.JPEG')
     # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -298,7 +309,7 @@ def test_cnn(sess):
 
 batch_size = 3
 test_percentage = 15
-validation_percentage = 10
+validation_percentage = 70
 data_loader = dataset_loader.dataset(batch_size = batch_size, test_percentage = test_percentage, validation_percentage = validation_percentage)
 train_size = data_loader.n_train_records
 pprint = pprint.PrettyPrinter(indent=4)
@@ -307,13 +318,11 @@ dirName = "generatedPics/"
 X = tf.placeholder(tf.float32,shape=[None,256,256,1])
 Y = tf.placeholder(tf.float32,shape=[None,64,64,313])
 
-#TODO: Fix Batch size needs to be equal for train and test
 def train_neural_network(X):
 
     prediction = convolutional_neural_network(X)
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=Y))
-    optimizer = tf.train.AdamOptimizer(learning_rate=0.000000000001).minimize(cost)
-    #FIXME: Epoch functioing
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.000000001).minimize(cost)
     hm_epochs = 5
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -326,7 +335,7 @@ def train_neural_network(X):
                 epoch_x, epoch_y = data_loader.getNextBatch()
                 encoded_epoch_y = encode(epoch_y)
                 _, c = sess.run([optimizer, cost], feed_dict={X: epoch_x, Y: encoded_epoch_y})
-                print "Cost: ", c
+                # print "Cost: ", c
                 epoch_loss += c
             print('Epoch', epoch, 'completed out of', hm_epochs, 'loss:', epoch_loss)
         test_cnn(sess)
@@ -334,5 +343,8 @@ def train_neural_network(X):
         # accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
         #print('Accuracy:', accuracy.eval({X: X, Y: Y}))
 
+t1 = time.time()
 train_neural_network(X)
+t2 = time.time()
 
+print (t2-t1), "seconds"

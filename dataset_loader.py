@@ -7,7 +7,7 @@ from random import shuffle
 
 class dataset():
 
-    def __init__(self, batch_size=100,test_percentage = 20, validation_percentage =20, path = "ILSVRCData/input_small_10.txt"):
+    def __init__(self, batch_size=100,test_percentage = 20, validation_percentage =20, path = "ILSVRCData/input_apple_20.txt"):
         self.batch_size = batch_size
         self.image_names = self.input_array(path)
         self.path = path
@@ -81,7 +81,7 @@ class dataset():
         # print lines
         return lines
 
-    def getImage256(self,name, path ="ILSVRCData/data256x256/", fileExtension = ".JPEG"):
+    def getImage256(self,name, path ="ILSVRCData/data_apple/", fileExtension = ".JPEG"):
         '''
         Get Image from 256x256 folder with name
         Args:
