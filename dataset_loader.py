@@ -15,8 +15,8 @@ class dataset():
         # print test_percentage
 
         self.n_train_records = int(len(self.image_names)*((100.0-int(test_percentage)-int(validation_percentage))/100.0))
-        self.n_test_records = int(len(self.image_names)-self.n_train_records)*(test_percentage/float(test_percentage+validation_percentage))
-        self.n_validation_records = len(self.image_names)-self.n_test_records-self.n_train_records
+        self.n_test_records = 0 if test_percentage==0 else (len(self.image_names)-self.n_train_records)*(test_percentage/float(test_percentage+validation_percentage))
+        self.n_validation_records = 0 if validation_percentage== 0 else len(self.image_names)-self.n_test_records-self.n_train_records
 
         self.currentBatch = 0
 

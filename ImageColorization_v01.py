@@ -309,7 +309,7 @@ def test_cnn(sess):
 
 batch_size = 3
 test_percentage = 15
-validation_percentage = 70
+validation_percentage = 10
 data_loader = dataset_loader.dataset(batch_size = batch_size, test_percentage = test_percentage, validation_percentage = validation_percentage)
 train_size = data_loader.n_train_records
 pprint = pprint.PrettyPrinter(indent=4)
@@ -323,23 +323,24 @@ def train_neural_network(X):
     prediction = convolutional_neural_network(X)
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=Y))
     optimizer = tf.train.AdamOptimizer(learning_rate=0.000000001).minimize(cost)
-    hm_epochs = 5
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
+    hm_epochs = 50
+    with tf.device("/gpu:0"):
+        with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as sess:
+            sess.run(tf.global_variables_initializer())
 
-        for epoch in range(hm_epochs):
-            epoch_loss = 0
-            data_loader = dataset_loader.dataset(batch_size=batch_size, test_percentage=test_percentage,
-                                                 validation_percentage=validation_percentage)
-            for _ in range(int(train_size / batch_size)):
-                epoch_x, epoch_y = data_loader.getNextBatch()
-                encoded_epoch_y = encode(epoch_y)
-                _, c = sess.run([optimizer, cost], feed_dict={X: epoch_x, Y: encoded_epoch_y})
-                # print "Cost: ", c
-                epoch_loss += c
-            print('Epoch', epoch, 'completed out of', hm_epochs, 'loss:', epoch_loss)
-        test_cnn(sess)
-        # correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(Y, 1))
+            for epoch in range(hm_epochs):
+                epoch_loss = 0
+                data_loader = dataset_loader.dataset(batch_size=batch_size, test_percentage=test_percentage,
+                                                     validation_percentage=validation_percentage)
+                for _ in range(int(train_size / batch_size)):
+                    epoch_x, epoch_y = data_loader.getNextBatch()
+                    encoded_epoch_y = encode(epoch_y)
+                    _, c = sess.run([optimizer, cost], feed_dict={X: epoch_x, Y: encoded_epoch_y})
+                    # print "Cost: ", c
+                    epoch_loss += c
+                print('Epoch', epoch, 'completed out of', hm_epochs, 'loss:', epoch_loss)
+            test_cnn(sess)
+            # correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(Y, 1))
         # accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
         #print('Accuracy:', accuracy.eval({X: X, Y: Y}))
 
