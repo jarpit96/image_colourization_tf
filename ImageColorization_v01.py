@@ -256,6 +256,46 @@ def encode(batch_y):
     updated_batch_y = np.array(updated_batch_y)
     return updated_batch_y
 
+def flatten_image(image):
+    image = np.array(image)
+    flat_image = image[:, :, 1:]
+    flat_image = flat_image.reshape(-1, flat_image.shape[2])
+    return flat_image
+
+def vectorized_encode(batch_y):
+    height = 64
+    width = 64
+    NN = 10
+    enc_dir = './resources/'
+    sigma = 5
+    color_space = np.load(os.path.join(enc_dir, 'pts_in_hull.npy'))
+
+    compressed_y = []
+    for i in range(len(batch_y)):
+        temp = resize(batch_y[i],(height,width))
+        compressed_y.append(temp)
+    compressed_y = np.array(compressed_y)
+
+    updated_batch_y = []
+    for y in compressed_y:
+        updated_y = []
+        flat_image = flatten_image(y)
+        (dists, indices) = nn.NearestNeighbors(n_neighbors=NN, algorithm='ball_tree').fit(color_space).kneighbors(
+            flat_image)
+        wts = np.exp(dists / (2 * sigma ** 2))
+        wts = wts / (np.sum(wts, axis=1).reshape(-1, 1))
+        wts = wts+10
+
+        pts = np.zeros(shape=(height*width, 313))
+        x = np.arange(0, height*width, dtype=np.int)[:,np.newaxis]
+        pts[x,indices] = wts
+        encoded_image = pts.reshape(height, width, -1)
+
+        updated_batch_y.append(encoded_image)
+    updated_batch_y = np.array(updated_batch_y)
+    return updated_batch_y
+
+
 def test_encode():
     image = cv2.imread(dirName + 'sample.JPEG')
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -334,7 +374,7 @@ def train_neural_network(X):
                                                      validation_percentage=validation_percentage)
                 for _ in range(int(train_size / batch_size)):
                     epoch_x, epoch_y = data_loader.getNextBatch()
-                    encoded_epoch_y = encode(epoch_y)
+                    encoded_epoch_y = vectorized_encode(epoch_y)
                     _, c = sess.run([optimizer, cost], feed_dict={X: epoch_x, Y: encoded_epoch_y})
                     # print "Cost: ", c
                     epoch_loss += c
