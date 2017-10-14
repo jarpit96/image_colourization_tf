@@ -363,15 +363,14 @@ def train_neural_network(X):
     prediction = convolutional_neural_network(X)
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=Y))
     optimizer = tf.train.AdamOptimizer(learning_rate=0.000003).minimize(cost)
-    hm_epochs = 1
+    hm_epochs = 2
     with tf.device("/gpu:0"):
         with tf.Session(config=tf.ConfigProto(log_device_placement=False)) as sess:
             sess.run(tf.global_variables_initializer())
 
             for epoch in range(hm_epochs):
                 epoch_loss = 0
-                data_loader = dataset_loader.dataset(batch_size=batch_size, test_percentage=test_percentage,
-                                                     validation_percentage=validation_percentage)
+                data_loader.shuffleTrainImages()
                 for _ in range(int(train_size / batch_size)):
                     epoch_x, epoch_y = data_loader.getNextBatch()
                     encoded_epoch_y = vectorized_encode(epoch_y)
