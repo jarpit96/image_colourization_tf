@@ -19,8 +19,16 @@ class dataset():
         self.n_validation_records = 0 if validation_percentage== 0 else len(self.image_names)-self.n_test_records-self.n_train_records
 
         self.currentBatch = 0
+        self.train_image_names = self.image_names[0:self.n_train_records]
 
         self.n_batches = int(self.n_train_records/batch_size)
+
+    def shuffleTrainImages(self):
+        '''
+        This function is to be called to shuffle thetrain batch for next epoch/iteration
+        '''
+        shuffle(self.train_image_names)
+        self.currentBatch = 0
 
     def getNextBatch(self):
         '''
@@ -32,7 +40,7 @@ class dataset():
         images =[]
         # print("Start",(self.currentBatch-1)*(self.batch_size), "\tEnd:", min(self.currentBatch*self.batch_size, self.n_train_records))
         for image_index in xrange((self.currentBatch-1)*(self.batch_size),min(self.currentBatch*self.batch_size, self.n_train_records)):
-            images.append(self.getImage256(self.image_names[image_index]))
+            images.append(self.getImage256(self.train_image_names[image_index]))
 
         # print np.array(images).shape
         image_l, image_lab = self.rgb2lab(np.array(images))

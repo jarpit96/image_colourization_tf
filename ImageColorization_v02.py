@@ -7,7 +7,7 @@ from skimage.transform import resize
 import pprint
 import dataset_loader
 import sklearn.neighbors as nn
-import time, datetime
+import time
 
 def weight_variable(shape):
     initial = tf.truncated_normal(shape, stddev=0.1)
@@ -295,6 +295,81 @@ def vectorized_encode(batch_y):
     updated_batch_y = np.array(updated_batch_y)
     return updated_batch_y
 
+# ***************************
+# ***** SUPPORT CLASSES *****
+# ***************************
+class PriorFactor():
+    ''' Class handles prior factor '''
+    def __init__(self,alpha,gamma=0,verbose=False,priorFile=''):
+        # INPUTS
+        #   alpha           integer     prior correction factor, 0 to ignore prior, 1 to divide by prior, alpha to divide by prior**alpha
+        #   gamma           integer     percentage to mix in uniform prior with empirical prior
+        #   priorFile       file        file which contains prior probabilities across classes
+
+        # settings
+        self.alpha = alpha
+        self.gamma = gamma
+        self.verbose = verbose
+
+        # empirical prior probability
+        self.prior_probs = np.load(priorFile)
+
+        # define uniform probability
+        self.uni_probs = np.zeros_like(self.prior_probs)
+        self.uni_probs[self.prior_probs!=0] = 1.
+        self.uni_probs = self.uni_probs/np.sum(self.uni_probs)
+
+        # convex combination of empirical prior and uniform distribution       
+        self.prior_mix = (1-self.gamma)*self.prior_probs + self.gamma*self.uni_probs
+
+        # set prior factor
+        self.prior_factor = self.prior_mix**-self.alpha
+        self.prior_factor = self.prior_factor/np.sum(self.prior_probs*self.prior_factor) # re-normalize
+
+        # implied empirical prior
+        self.implied_prior = self.prior_probs*self.prior_factor
+        self.implied_prior = self.implied_prior/np.sum(self.implied_prior) # re-normalize
+
+        if(self.verbose):
+            self.print_correction_stats()
+
+    def print_correction_stats(self):
+        print 'Prior factor correction:'
+        print '  (alpha,gamma) = (%.2f, %.2f)'%(self.alpha,self.gamma)
+        print '  (min,max,mean,med,exp) = (%.2f, %.2f, %.2f, %.2f, %.2f)'%(np.min(self.prior_factor),np.max(self.prior_factor),np.mean(self.prior_factor),np.median(self.prior_factor),np.sum(self.prior_factor*self.prior_probs))
+
+    def forward(self,data_ab_quant,axis=1):
+        data_ab_maxind = np.argmax(data_ab_quant,axis=axis)
+        corr_factor = self.prior_factor[data_ab_maxind]
+        if(axis==0):
+            return corr_factor[np.newaxis,:]
+        elif(axis==1):
+            return corr_factor[:,np.newaxis,:]
+        elif(axis==2):
+            return corr_factor[:,:,np.newaxis,:]
+        elif(axis==3):
+            return corr_factor[:,:,:,np.newaxis]
+
+def _prior_boost(gt_ab_313):
+  '''
+  Args:
+    gt_ab_313: (N, H, W, 313)
+  Returns:
+    prior_boost: (N, H, W, 1)
+  '''
+  enc_dir = './resources'
+  gamma = 0.5
+  alpha = 1.0
+
+  pc = PriorFactor(alpha, gamma, priorFile=os.path.join(enc_dir, 'prior_probs.npy'))
+
+  gt_ab_313 = np.transpose(gt_ab_313, (0, 3, 1, 2))
+  prior_boost = pc.forward(gt_ab_313, axis=1)
+
+  prior_boost = np.transpose(prior_boost, (0, 2, 3, 1))
+  return prior_boost
+
+
 
 def test_encode():
     image = cv2.imread(dirName + 'sample.JPEG')
@@ -313,7 +388,7 @@ def test_encode():
     # image = decode(X_l, sess.run(prediction))
     imsave(dirName + 'sample2.jpeg', image)
 
-def test_cnn(sess, epoch, epoch_loss):
+def test_cnn(sess):
     data_loader_test_data = dataset_loader.dataset(batch_size=batch_size, test_percentage=test_percentage,
                                          validation_percentage=validation_percentage)
 
@@ -341,15 +416,15 @@ def test_cnn(sess, epoch, epoch_loss):
     i = 0
     for image_rgb in images_rgb:
         i+=1
-        imsave(dirName+str(epoch)+'epoch_cost'+str(epoch_loss) +'file'+ str(i) + 'Gen.jpeg', image_rgb)
+        imsave(dirName + str(i) + 'Gen.jpeg', image_rgb)
     i = 0
     # for image_test in image_lab:
     #     i+=1
     #     imsave(dirName + str(i) + 'Test.jpeg', image_test)
 
-batch_size = 30
-test_percentage = 2.5
-validation_percentage = 2.5
+batch_size = 3
+test_percentage = 15
+validation_percentage = 10
 data_loader = dataset_loader.dataset(batch_size = batch_size, test_percentage = test_percentage, validation_percentage = validation_percentage)
 train_size = data_loader.n_train_records
 pprint = pprint.PrettyPrinter(indent=4)
@@ -357,22 +432,40 @@ dirName = "generatedPics/"
 
 X = tf.placeholder(tf.float32,shape=[None,256,256,1])
 Y = tf.placeholder(tf.float32,shape=[None,64,64,313])
-global_step = tf.Variable(0, name='global_step', trainable = False)
+
 def train_neural_network(X):
 
+    x_ab_ss = X[:, ::4, ::4, :]
     prediction = convolutional_neural_network(X)
-    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=Y))
-    learning_rate = tf.train.exponential_decay(learning_rate=0.0000000316, global_step=global_step, decay_steps=210000, decay_rate = 0.316, staircase=True)
+    thresh = 5
+    nongray_mask = (np.sum(np.sum(np.sum(np.abs(x_ab_ss) > thresh, axis=1), axis=1), axis=1) > 0)[:, np.newaxis, np.newaxis, np.newaxis]
+    #Prior_Boost 
+    #prior_boost: [N, 1, H/4, W/4]
+    prior_boost = _prior_boost(prediction)
 
-    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost, global_step=global_step)
-    hm_epochs = 200
+    #Eltwise
+    #prior_boost_nongray: [N, 1, H/4, W/4]
+    prior_boost_nongray = prior_boost * nongray_mask
+    g_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=Y))
+    dl2c = tf.gradients(g_loss, prediction)
+    dl2c = tf.stop_gradient(dl2c)
+
+    
+
+    #
+    cost = tf.reduce_sum(dl2c * prediction * prior_boost_nongray)
+
+    
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.000001).minimize(cost)
+    hm_epochs = 50
     with tf.device("/gpu:0"):
         with tf.Session(config=tf.ConfigProto(log_device_placement=False)) as sess:
             sess.run(tf.global_variables_initializer())
 
             for epoch in range(hm_epochs):
                 epoch_loss = 0
-                data_loader.shuffleTrainImages()
+                data_loader = dataset_loader.dataset(batch_size=batch_size, test_percentage=test_percentage,
+                                                     validation_percentage=validation_percentage)
                 for _ in range(int(train_size / batch_size)):
                     epoch_x, epoch_y = data_loader.getNextBatch()
                     encoded_epoch_y = vectorized_encode(epoch_y)
@@ -380,16 +473,12 @@ def train_neural_network(X):
                     # print "Cost: ", c
                     epoch_loss += c
                 print('Epoch', epoch, 'completed out of', hm_epochs, 'loss:', epoch_loss)
-            	if epoch!=0 and epoch%10 == 0:
-            		test_cnn(sess, epoch, epoch_loss)
-            test_cnn(sess, 'final', 'losses')
+            test_cnn(sess)
             # correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(Y, 1))
         # accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
         #print('Accuracy:', accuracy.eval({X: X, Y: Y}))
 
-print "start"
 t1 = time.time()
-# print datetime.datetime.now()
 train_neural_network(X)
 t2 = time.time()
 
