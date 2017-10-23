@@ -7,14 +7,14 @@ from random import shuffle
 
 class dataset():
 
-    def __init__(self, batch_size=100,test_percentage = 20, validation_percentage =20, path = "ILSVRCData/input_apple_20.txt"):
+    def __init__(self, batch_size=100,test_percentage = 20.0, validation_percentage =20.0, path = "ILSVRCData/input_apple.txt"):
         self.batch_size = batch_size
         self.image_names = self.input_array(path)
         self.path = path
         shuffle(self.image_names)
         # print test_percentage
 
-        self.n_train_records = int(len(self.image_names)*((100.0-int(test_percentage)-int(validation_percentage))/100.0))
+        self.n_train_records = int(len(self.image_names)*((100.0-test_percentage-validation_percentage)/100.0))
         self.n_test_records = 0 if test_percentage==0 else (len(self.image_names)-self.n_train_records)*(test_percentage/float(test_percentage+validation_percentage))
         self.n_validation_records = 0 if validation_percentage== 0 else len(self.image_names)-self.n_test_records-self.n_train_records
 
@@ -81,7 +81,7 @@ class dataset():
         # print lines
         return lines
 
-    def getImage256(self,name, path ="ILSVRCData/data_apple/", fileExtension = ".JPEG"):
+    def getImage256(self,name, path ="ILSVRCData/Appledata256x256/", fileExtension = ""):
         '''
         Get Image from 256x256 folder with name
         Args:
@@ -91,7 +91,7 @@ class dataset():
         Return:
         image data in RGB channels
         '''
-        # print(os.path.join(os.getcwd(), path+name))
+        # print(os.path.join(os.getcwd(), path+name+fileExtension))
         # print os.getcwd()
         # print os.path.isfile("/home/arpit/PC/Work/Major1/image_colourization_tf/ILSVRCData/data256x256/sample.JPEG")
         image = cv2.imread(os.path.join(os.getcwd(), path+name+fileExtension))
