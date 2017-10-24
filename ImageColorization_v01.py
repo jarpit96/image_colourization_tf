@@ -13,8 +13,8 @@ def weight_variable(shape):
     initial = tf.truncated_normal(shape, stddev=0.1)
     return tf.Variable(initial)
 
-def batch_norm(x):
-  return tf.contrib.layers.batch_norm(x)
+def batch_norm(scope,x, is_training=True):
+  return tf.contrib.layers.batch_norm(x, is_training = is_training, center=True, scale=True, updates_collections=None, trainable=True, reuse=True, scope=scope)
 
 
 def bias_variable(shape):
@@ -99,47 +99,47 @@ biases = {
 def conv2d(x, W, s):
     return tf.nn.conv2d(x, W, strides=[1, s, s, 1], padding='SAME')
 
-def convolutional_neural_network(x):  # , keep_rate):
+def convolutional_neural_network(x, is_training=True):  # , keep_rate):
     # Convolution Layers, using our function
     # block1
     conv_b1_1 = tf.nn.relu(conv2d(x, weights['W_conv_b1_1'], 1) + biases['b_conv_b1_1'])
     conv_b1_2 = tf.nn.relu(conv2d(conv_b1_1, weights['W_conv_b1_2'], 2) + biases['b_conv_b1_2'])
-    conv_b1_2 = batch_norm(conv_b1_2)
+    conv_b1_2 = batch_norm('conv_b1_2', conv_b1_2, is_training)
     # block2
     conv_b2_1 = tf.nn.relu(conv2d(conv_b1_2, weights['W_conv_b2_1'], 1) + biases['b_conv_b2_1'])
     conv_b2_2 = tf.nn.relu(conv2d(conv_b2_1, weights['W_conv_b2_2'], 2) + biases['b_conv_b2_2'])
-    conv_b2_2 = batch_norm(conv_b2_2)
+    conv_b2_2 = batch_norm('conv_b2_2', conv_b2_2, is_training)
     # block3
     conv_b3_1 = tf.nn.relu(conv2d(conv_b2_2, weights['W_conv_b3_1'], 1) + biases['b_conv_b3_1'])
     conv_b3_2 = tf.nn.relu(conv2d(conv_b3_1, weights['W_conv_b3_2'], 1) + biases['b_conv_b3_2'])
     conv_b3_3 = tf.nn.relu(conv2d(conv_b3_2, weights['W_conv_b3_3'], 2) + biases['b_conv_b3_3'])
-    conv_b3_3 = batch_norm(conv_b3_3)
+    conv_b3_3 = batch_norm('conv_b3_3', conv_b3_3, is_training)
     # block4
     conv_b4_1 = tf.nn.relu(conv2d(conv_b3_3, weights['W_conv_b4_1'], 1) + biases['b_conv_b4_1'])
     conv_b4_2 = tf.nn.relu(conv2d(conv_b4_1, weights['W_conv_b4_2'], 1) + biases['b_conv_b4_2'])
     conv_b4_3 = tf.nn.relu(conv2d(conv_b4_2, weights['W_conv_b4_3'], 1) + biases['b_conv_b4_3'])
-    conv_b4_3 = batch_norm(conv_b4_3)
+    conv_b4_3 = batch_norm('conv_b4_3',conv_b4_3, is_training)
     # block5
     conv_b5_1 = tf.nn.relu(conv2d(conv_b4_3, weights['W_conv_b5_1'], 1) + biases['b_conv_b5_1'])
     conv_b5_2 = tf.nn.relu(conv2d(conv_b5_1, weights['W_conv_b5_2'], 1) + biases['b_conv_b5_2'])
     conv_b5_3 = tf.nn.relu(conv2d(conv_b5_2, weights['W_conv_b5_3'], 1) + biases['b_conv_b5_3'])
-    conv_b5_3 = batch_norm(conv_b5_3)
+    conv_b5_3 = batch_norm('conv_b5_3',conv_b5_3, is_training)
     # block6
     conv_b6_1 = tf.nn.relu(conv2d(conv_b5_3, weights['W_conv_b6_1'], 1) + biases['b_conv_b6_1'])
     conv_b6_2 = tf.nn.relu(conv2d(conv_b6_1, weights['W_conv_b6_2'], 1) + biases['b_conv_b6_2'])
     conv_b6_3 = tf.nn.relu(conv2d(conv_b6_2, weights['W_conv_b6_3'], 1) + biases['b_conv_b6_3'])
-    conv_b6_3 = batch_norm(conv_b6_3)
+    conv_b6_3 = batch_norm('conv_b6_3',conv_b6_3, is_training)
     # block7
     conv_b7_1 = tf.nn.relu(conv2d(conv_b6_3, weights['W_conv_b7_1'], 1) + biases['b_conv_b7_1'])
     conv_b7_2 = tf.nn.relu(conv2d(conv_b7_1, weights['W_conv_b7_2'], 1) + biases['b_conv_b7_2'])
     conv_b7_3 = tf.nn.relu(conv2d(conv_b7_2, weights['W_conv_b7_3'], 1) + biases['b_conv_b7_3'])
-    conv_b7_3 = batch_norm(conv_b7_3)
+    conv_b7_3 = batch_norm('conv_b7_3',conv_b7_3, is_training)
     # block8
     #TODO: Verify usage of batch size
     conv_b8_1 = tf.nn.relu(tf.nn.conv2d_transpose(value = conv_b7_3,output_shape=[batch_size, 64, 64, 256], filter = weights['W_conv_b8_1'], strides=[1, 2, 2, 1],padding='SAME') + biases['b_conv_b8_1'])
     conv_b8_2 = tf.nn.relu(conv2d(conv_b8_1, weights['W_conv_b8_2'], 1) + biases['b_conv_b8_2'])
     conv_b8_3 = tf.nn.relu(conv2d(conv_b8_2, weights['W_conv_b8_3'], 1) + biases['b_conv_b8_3'])
-    conv_b8_3 = batch_norm(conv_b8_3)
+    conv_b8_3 = batch_norm('conv_b8_3',conv_b8_3, is_training)
     # conv_b8_4 = tf.nn.relu(tf.nn.conv2d_transpose(x, weights['W_conv_b8_4']) + biases['b_conv_b8_4'], [1,256,256,1], strides=[1, 4, 4, 1], padding='SAME'))
 
     output = conv2d(conv_b8_3, weights['out'], 1) + biases['out']
@@ -340,9 +340,11 @@ def test_cnn(sess, epoch, epoch_loss):
     # image_l, images = data_loader.rgb2lab(images)
     # images = tf.cast(images, tf.float32)
     # # image_l = tf.cast(image_l, tf.float32)
+
+
     image_l = np.array(image_l, dtype=np.float32)
     # image_l = images[:,:,:,0:1]
-    encoded_img = convolutional_neural_network(image_l)
+    encoded_img = convolutional_neural_network(image_l, is_training = False)
 
     # sess.run(tf.global_variables_initializer())
     encoded_img_val = sess.run(encoded_img)
