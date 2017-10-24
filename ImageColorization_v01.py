@@ -349,8 +349,8 @@ def test_cnn(sess, epoch, epoch_loss):
     #     imsave(dirName + str(i) + 'Test.jpeg', image_test)
 
 batch_size = 30
-test_percentage = 2.5
-validation_percentage = 2.5
+test_percentage = 15
+validation_percentage = 70
 data_loader = dataset_loader.dataset(batch_size = batch_size, test_percentage = test_percentage, validation_percentage = validation_percentage)
 train_size = data_loader.n_train_records
 pprint = pprint.PrettyPrinter(indent=4)
@@ -366,16 +366,30 @@ def save_to_file(data):
 		thefile.write("%s\n" % item)
 
 
+def get_weighting_factor(alpha = 1, gamma = 0.5, prior_file='resources/prior_probs.npy'):
+	prior_probs = np.load(prior_file)
+	uni_probs = np.zeros_like(prior_probs)
+	uni_probs[prior_probs!=0] = 1.
+	uni_probs = uni_probs/np.sum(uni_probs)
+	# convex combination of empirical prior and uniform distribution       
+	prior_mix = (1-gamma)*prior_probs + gamma*uni_probs
+    # set prior factor
+	prior_factor = prior_mix**-alpha
+	prior_factor = prior_factor/np.sum(prior_probs*prior_factor) # re-normalize
+	return prior_factor
+
 def train_neural_network(X):
     output_log = []
     prediction = convolutional_neural_network(X)
-    probs = np.load('resources/prior_probs.npy')
-
-    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=Y))
     learning_rate = tf.train.exponential_decay(learning_rate=0.0000000316, global_step=global_step, decay_steps=210000, decay_rate = 0.316, staircase=True)
-
+    alpha = 1
+    gamma = 0.5
+    prior_file = 'resources/prior_probs.npy'
+    weighting_factor = get_weighting_factor(alpha,gamma)
+    #cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=Y))
+    cost = tf.reduce_mean(-((Y * tf.log(prediction)) * weighting_factor))
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost, global_step=global_step)
-    hm_epochs = 400
+    hm_epochs = 2
     with tf.device("/gpu:0"):
         with tf.Session(config=tf.ConfigProto(log_device_placement=False)) as sess:
             sess.run(tf.global_variables_initializer())
