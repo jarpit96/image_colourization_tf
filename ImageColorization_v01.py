@@ -314,10 +314,10 @@ def test_encode():
     imsave(dirName + 'sample2.jpeg', image)
 
 def test_cnn(sess, epoch, epoch_loss):
-    data_loader_test_data = dataset_loader.dataset(batch_size=batch_size, test_percentage=test_percentage,
-                                         validation_percentage=validation_percentage)
+    # data_loader_test_data = dataset_loader.dataset(batch_size=batch_size, test_percentage=test_percentage,
+    #                                      validation_percentage=validation_percentage)
 
-    image_l, image_lab = data_loader_test_data.getTestData()
+    image_l, image_lab = data_loader.getTestData()
 
     # image = cv2.imread(dirName + 'sample.JPEG')
     # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -341,7 +341,8 @@ def test_cnn(sess, epoch, epoch_loss):
     i = 0
     for image_rgb in images_rgb:
         i+=1
-        imsave(dirName+str(epoch)+'epoch_cost'+str(epoch_loss) +'file'+ str(i) + 'Gen.jpeg', image_rgb)
+        # imsave(dirName+str(epoch)+'epoch_cost'+str(epoch_loss) +'file'+ str(i) + 'Gen.jpeg', image_rgb)
+        imsave(dirName+'boosted_'+str(epoch)+'epoch_' + str(i) + 'Gen.jpeg', image_rgb)
     i = 0
     # for image_test in image_lab:
     #     i+=1
@@ -358,14 +359,23 @@ dirName = "generatedPics/"
 X = tf.placeholder(tf.float32,shape=[None,256,256,1])
 Y = tf.placeholder(tf.float32,shape=[None,64,64,313])
 global_step = tf.Variable(0, name='global_step', trainable = False)
-def train_neural_network(X):
 
+def save_to_file(data):
+	thefile = open('output_log.txt', 'w')
+	for item in data:
+		thefile.write("%s\n" % item)
+
+
+def train_neural_network(X):
+    output_log = []
     prediction = convolutional_neural_network(X)
+    probs = np.load('resources/prior_probs.npy')
+
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=Y))
     learning_rate = tf.train.exponential_decay(learning_rate=0.0000000316, global_step=global_step, decay_steps=210000, decay_rate = 0.316, staircase=True)
 
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost, global_step=global_step)
-    hm_epochs = 200
+    hm_epochs = 400
     with tf.device("/gpu:0"):
         with tf.Session(config=tf.ConfigProto(log_device_placement=False)) as sess:
             sess.run(tf.global_variables_initializer())
@@ -380,13 +390,14 @@ def train_neural_network(X):
                     # print "Cost: ", c
                     epoch_loss += c
                 print('Epoch', epoch, 'completed out of', hm_epochs, 'loss:', epoch_loss)
+            	output_log.append('Epoch: ' +  str(epoch) + ' loss: ' + str(epoch_loss))
             	if epoch!=0 and epoch%10 == 0:
             		test_cnn(sess, epoch, epoch_loss)
             test_cnn(sess, 'final', 'losses')
             # correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(Y, 1))
         # accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
         #print('Accuracy:', accuracy.eval({X: X, Y: Y}))
-
+    save_to_file(output_log)
 print "start"
 t1 = time.time()
 # print datetime.datetime.now()
