@@ -359,9 +359,9 @@ def test_cnn(sess, epoch, epoch_loss):
     #     i+=1
     #     imsave(dirName + str(i) + 'Test.jpeg', image_test)
 
-batch_size = 3
-test_percentage = 0.25
-validation_percentage = 99.5
+batch_size = 30
+test_percentage = 2.5
+validation_percentage = 2.5
 data_loader = dataset_loader.dataset(batch_size = batch_size, test_percentage = test_percentage, validation_percentage = validation_percentage)
 train_size = data_loader.n_train_records
 pprint = pprint.PrettyPrinter(indent=4)
@@ -389,6 +389,11 @@ def get_weighting_factor(alpha = 1, gamma = 0.5, prior_file='resources/prior_pro
 	prior_factor = prior_factor/np.sum(prior_probs*prior_factor) # re-normalize
 	return prior_factor
 
+def save_model(sess):
+    saver = tf.train.Saver()
+    save_path = saver.save(sess, "./model/model.ckpt")
+    print("Model saved in file: %s" % save_path)
+
 def train_neural_network(X):
     output_log = []
     prediction = convolutional_neural_network(X)
@@ -402,7 +407,7 @@ def train_neural_network(X):
     # weighting_factor = get_weighting_factor(alpha,gamma)
     # cost = tf.reduce_mean(-((Y * tf.log(prediction)) * weighting_factor)/batch_size)
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost, global_step=global_step)
-    hm_epochs = 1
+    hm_epochs = 100
     with tf.Session(config=tf.ConfigProto(log_device_placement=False)) as sess:
         sess.run(tf.global_variables_initializer())
 
@@ -417,9 +422,10 @@ def train_neural_network(X):
                 epoch_loss += c
             print('Epoch', epoch, 'completed out of', hm_epochs, 'loss:', epoch_loss)
             output_log.append('Epoch: ' +  str(epoch) + ' loss: ' + str(epoch_loss))
-            if epoch!=0 and epoch%10 == 0:
-                test_cnn(sess, epoch, epoch_loss)
-        test_cnn(sess, 'final', 'losses')
+            # if epoch!=0 and epoch%10 == 0:
+            #     test_cnn(sess, epoch, epoch_loss)
+        save_model(sess)
+        # test_cnn(sess, 'final', 'losses')
         # correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(Y, 1))
     # accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
     #print('Accuracy:', accuracy.eval({X: X, Y: Y}))
