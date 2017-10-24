@@ -13,6 +13,9 @@ def weight_variable(shape):
     initial = tf.truncated_normal(shape, stddev=0.1)
     return tf.Variable(initial)
 
+def batch_norm(x):
+  return tf.contrib.layers.batch_norm(x)
+
 
 def bias_variable(shape):
     initial = tf.constant(0.1, shape=shape)
@@ -101,34 +104,42 @@ def convolutional_neural_network(x):  # , keep_rate):
     # block1
     conv_b1_1 = tf.nn.relu(conv2d(x, weights['W_conv_b1_1'], 1) + biases['b_conv_b1_1'])
     conv_b1_2 = tf.nn.relu(conv2d(conv_b1_1, weights['W_conv_b1_2'], 2) + biases['b_conv_b1_2'])
+    conv_b1_2 = batch_norm(conv_b1_2)
     # block2
     conv_b2_1 = tf.nn.relu(conv2d(conv_b1_2, weights['W_conv_b2_1'], 1) + biases['b_conv_b2_1'])
     conv_b2_2 = tf.nn.relu(conv2d(conv_b2_1, weights['W_conv_b2_2'], 2) + biases['b_conv_b2_2'])
+    conv_b2_2 = batch_norm(conv_b2_2)
     # block3
     conv_b3_1 = tf.nn.relu(conv2d(conv_b2_2, weights['W_conv_b3_1'], 1) + biases['b_conv_b3_1'])
     conv_b3_2 = tf.nn.relu(conv2d(conv_b3_1, weights['W_conv_b3_2'], 1) + biases['b_conv_b3_2'])
     conv_b3_3 = tf.nn.relu(conv2d(conv_b3_2, weights['W_conv_b3_3'], 2) + biases['b_conv_b3_3'])
+    conv_b3_3 = batch_norm(conv_b3_3)
     # block4
     conv_b4_1 = tf.nn.relu(conv2d(conv_b3_3, weights['W_conv_b4_1'], 1) + biases['b_conv_b4_1'])
     conv_b4_2 = tf.nn.relu(conv2d(conv_b4_1, weights['W_conv_b4_2'], 1) + biases['b_conv_b4_2'])
     conv_b4_3 = tf.nn.relu(conv2d(conv_b4_2, weights['W_conv_b4_3'], 1) + biases['b_conv_b4_3'])
+    conv_b4_3 = batch_norm(conv_b4_3)
     # block5
     conv_b5_1 = tf.nn.relu(conv2d(conv_b4_3, weights['W_conv_b5_1'], 1) + biases['b_conv_b5_1'])
     conv_b5_2 = tf.nn.relu(conv2d(conv_b5_1, weights['W_conv_b5_2'], 1) + biases['b_conv_b5_2'])
     conv_b5_3 = tf.nn.relu(conv2d(conv_b5_2, weights['W_conv_b5_3'], 1) + biases['b_conv_b5_3'])
+    conv_b5_3 = batch_norm(conv_b5_3)
     # block6
     conv_b6_1 = tf.nn.relu(conv2d(conv_b5_3, weights['W_conv_b6_1'], 1) + biases['b_conv_b6_1'])
     conv_b6_2 = tf.nn.relu(conv2d(conv_b6_1, weights['W_conv_b6_2'], 1) + biases['b_conv_b6_2'])
     conv_b6_3 = tf.nn.relu(conv2d(conv_b6_2, weights['W_conv_b6_3'], 1) + biases['b_conv_b6_3'])
+    conv_b6_3 = batch_norm(conv_b6_3)
     # block7
     conv_b7_1 = tf.nn.relu(conv2d(conv_b6_3, weights['W_conv_b7_1'], 1) + biases['b_conv_b7_1'])
     conv_b7_2 = tf.nn.relu(conv2d(conv_b7_1, weights['W_conv_b7_2'], 1) + biases['b_conv_b7_2'])
     conv_b7_3 = tf.nn.relu(conv2d(conv_b7_2, weights['W_conv_b7_3'], 1) + biases['b_conv_b7_3'])
+    conv_b7_3 = batch_norm(conv_b7_3)
     # block8
     #TODO: Verify usage of batch size
     conv_b8_1 = tf.nn.relu(tf.nn.conv2d_transpose(value = conv_b7_3,output_shape=[batch_size, 64, 64, 256], filter = weights['W_conv_b8_1'], strides=[1, 2, 2, 1],padding='SAME') + biases['b_conv_b8_1'])
     conv_b8_2 = tf.nn.relu(conv2d(conv_b8_1, weights['W_conv_b8_2'], 1) + biases['b_conv_b8_2'])
     conv_b8_3 = tf.nn.relu(conv2d(conv_b8_2, weights['W_conv_b8_3'], 1) + biases['b_conv_b8_3'])
+    conv_b8_3 = batch_norm(conv_b8_3)
     # conv_b8_4 = tf.nn.relu(tf.nn.conv2d_transpose(x, weights['W_conv_b8_4']) + biases['b_conv_b8_4'], [1,256,256,1], strides=[1, 4, 4, 1], padding='SAME'))
 
     output = conv2d(conv_b8_3, weights['out'], 1) + biases['out']
@@ -348,9 +359,9 @@ def test_cnn(sess, epoch, epoch_loss):
     #     i+=1
     #     imsave(dirName + str(i) + 'Test.jpeg', image_test)
 
-batch_size = 30
-test_percentage = 15
-validation_percentage = 70
+batch_size = 3
+test_percentage = 0.25
+validation_percentage = 99.5
 data_loader = dataset_loader.dataset(batch_size = batch_size, test_percentage = test_percentage, validation_percentage = validation_percentage)
 train_size = data_loader.n_train_records
 pprint = pprint.PrettyPrinter(indent=4)
@@ -381,36 +392,37 @@ def get_weighting_factor(alpha = 1, gamma = 0.5, prior_file='resources/prior_pro
 def train_neural_network(X):
     output_log = []
     prediction = convolutional_neural_network(X)
-    learning_rate = tf.train.exponential_decay(learning_rate=0.0000000316, global_step=global_step, decay_steps=210000, decay_rate = 0.316, staircase=True)
-    alpha = 1
-    gamma = 0.5
-    prior_file = 'resources/prior_probs.npy'
-    weighting_factor = get_weighting_factor(alpha,gamma)
-    #cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=Y))
-    cost = tf.reduce_mean(-((Y * tf.log(prediction)) * weighting_factor))
-    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost, global_step=global_step)
-    hm_epochs = 2
-    with tf.device("/gpu:0"):
-        with tf.Session(config=tf.ConfigProto(log_device_placement=False)) as sess:
-            sess.run(tf.global_variables_initializer())
+    learning_rate = tf.train.exponential_decay(learning_rate=0.01, global_step=global_step, decay_steps=210000, decay_rate = 0.316, staircase=True)
 
-            for epoch in range(hm_epochs):
-                epoch_loss = 0
-                data_loader.shuffleTrainImages()
-                for _ in range(int(train_size / batch_size)):
-                    epoch_x, epoch_y = data_loader.getNextBatch()
-                    encoded_epoch_y = vectorized_encode(epoch_y)
-                    _, c = sess.run([optimizer, cost], feed_dict={X: epoch_x, Y: encoded_epoch_y})
-                    # print "Cost: ", c
-                    epoch_loss += c
-                print('Epoch', epoch, 'completed out of', hm_epochs, 'loss:', epoch_loss)
-            	output_log.append('Epoch: ' +  str(epoch) + ' loss: ' + str(epoch_loss))
-            	if epoch!=0 and epoch%10 == 0:
-            		test_cnn(sess, epoch, epoch_loss)
-            test_cnn(sess, 'final', 'losses')
-            # correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(Y, 1))
-        # accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
-        #print('Accuracy:', accuracy.eval({X: X, Y: Y}))
+    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=Y))/batch_size
+    #Uncomment for cost with probabilities
+    # alpha = 1
+    # gamma = 0.5
+    # prior_file = 'resources/prior_probs.npy'
+    # weighting_factor = get_weighting_factor(alpha,gamma)
+    # cost = tf.reduce_mean(-((Y * tf.log(prediction)) * weighting_factor)/batch_size)
+    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost, global_step=global_step)
+    hm_epochs = 1
+    with tf.Session(config=tf.ConfigProto(log_device_placement=False)) as sess:
+        sess.run(tf.global_variables_initializer())
+
+        for epoch in range(hm_epochs):
+            epoch_loss = 0
+            data_loader.shuffleTrainImages()
+            for _ in range(int(train_size / batch_size)):
+                epoch_x, epoch_y = data_loader.getNextBatch()
+                encoded_epoch_y = vectorized_encode(epoch_y)
+                _, c = sess.run([optimizer, cost], feed_dict={X: epoch_x, Y: encoded_epoch_y})
+                # print "Cost: ", c
+                epoch_loss += c
+            print('Epoch', epoch, 'completed out of', hm_epochs, 'loss:', epoch_loss)
+            output_log.append('Epoch: ' +  str(epoch) + ' loss: ' + str(epoch_loss))
+            if epoch!=0 and epoch%10 == 0:
+                test_cnn(sess, epoch, epoch_loss)
+        test_cnn(sess, 'final', 'losses')
+        # correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(Y, 1))
+    # accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
+    #print('Accuracy:', accuracy.eval({X: X, Y: Y}))
     save_to_file(output_log)
 print "start"
 t1 = time.time()
