@@ -105,36 +105,36 @@ class Net:
         # block1
         conv_b1_1 = tf.nn.relu(self.conv2d(x, self.weights['W_conv_b1_1'], 1) + self.biases['b_conv_b1_1'])
         conv_b1_2 = tf.nn.relu(self.conv2d(conv_b1_1, self.weights['W_conv_b1_2'], 2) + self.biases['b_conv_b1_2'])
-        conv_b1_2 = batch_norm('conv_b1_2', conv_b1_2, is_training)
+        conv_b1_2 = batch_norm(conv_b1_2)
         # block2
         conv_b2_1 = tf.nn.relu(self.conv2d(conv_b1_2, self.weights['W_conv_b2_1'], 1) + self.biases['b_conv_b2_1'])
         conv_b2_2 = tf.nn.relu(self.conv2d(conv_b2_1, self.weights['W_conv_b2_2'], 2) + self.biases['b_conv_b2_2'])
-        conv_b2_2 = batch_norm('conv_b2_2', conv_b2_2, is_training)
+        conv_b2_2 = batch_norm(conv_b2_2)
         # block3
         conv_b3_1 = tf.nn.relu(self.conv2d(conv_b2_2, self.weights['W_conv_b3_1'], 1) + self.biases['b_conv_b3_1'])
         conv_b3_2 = tf.nn.relu(self.conv2d(conv_b3_1, self.weights['W_conv_b3_2'], 1) + self.biases['b_conv_b3_2'])
         conv_b3_3 = tf.nn.relu(self.conv2d(conv_b3_2, self.weights['W_conv_b3_3'], 2) + self.biases['b_conv_b3_3'])
-        conv_b3_3 = batch_norm('conv_b3_3', conv_b3_3, is_training)
+        conv_b3_3 = batch_norm(conv_b3_3)
         # block4
         conv_b4_1 = tf.nn.relu(self.conv2d(conv_b3_3, self.weights['W_conv_b4_1'], 1) + self.biases['b_conv_b4_1'])
         conv_b4_2 = tf.nn.relu(self.conv2d(conv_b4_1, self.weights['W_conv_b4_2'], 1) + self.biases['b_conv_b4_2'])
         conv_b4_3 = tf.nn.relu(self.conv2d(conv_b4_2, self.weights['W_conv_b4_3'], 1) + self.biases['b_conv_b4_3'])
-        conv_b4_3 = batch_norm('conv_b4_3', conv_b4_3, is_training)
+        conv_b4_3 = batch_norm(conv_b4_3)
         # block5
         conv_b5_1 = tf.nn.relu(self.conv2d(conv_b4_3, self.weights['W_conv_b5_1'], 1) + self.biases['b_conv_b5_1'])
         conv_b5_2 = tf.nn.relu(self.conv2d(conv_b5_1, self.weights['W_conv_b5_2'], 1) + self.biases['b_conv_b5_2'])
         conv_b5_3 = tf.nn.relu(self.conv2d(conv_b5_2, self.weights['W_conv_b5_3'], 1) + self.biases['b_conv_b5_3'])
-        conv_b5_3 = batch_norm('conv_b5_3', conv_b5_3, is_training)
+        conv_b5_3 = batch_norm(conv_b5_3)
         # block6
         conv_b6_1 = tf.nn.relu(self.conv2d(conv_b5_3, self.weights['W_conv_b6_1'], 1) + self.biases['b_conv_b6_1'])
         conv_b6_2 = tf.nn.relu(self.conv2d(conv_b6_1, self.weights['W_conv_b6_2'], 1) + self.biases['b_conv_b6_2'])
         conv_b6_3 = tf.nn.relu(self.conv2d(conv_b6_2, self.weights['W_conv_b6_3'], 1) + self.biases['b_conv_b6_3'])
-        conv_b6_3 = batch_norm('conv_b6_3', conv_b6_3, is_training)
+        conv_b6_3 = batch_norm(conv_b6_3)
         # block7
         conv_b7_1 = tf.nn.relu(self.conv2d(conv_b6_3, self.weights['W_conv_b7_1'], 1) + self.biases['b_conv_b7_1'])
         conv_b7_2 = tf.nn.relu(self.conv2d(conv_b7_1, self.weights['W_conv_b7_2'], 1) + self.biases['b_conv_b7_2'])
         conv_b7_3 = tf.nn.relu(self.conv2d(conv_b7_2, self.weights['W_conv_b7_3'], 1) + self.biases['b_conv_b7_3'])
-        conv_b7_3 = batch_norm('conv_b7_3', conv_b7_3, is_training)
+        conv_b7_3 = batch_norm(conv_b7_3)
         # block8
         # TODO: Verify usage of batch size
         conv_b8_1 = tf.nn.relu(tf.nn.conv2d_transpose(value=conv_b7_3, output_shape=[batch_size, 64, 64, 256],
@@ -142,15 +142,14 @@ class Net:
                                                       padding='SAME') + self.biases['b_conv_b8_1'])
         conv_b8_2 = tf.nn.relu(self.conv2d(conv_b8_1, self.weights['W_conv_b8_2'], 1) + self.biases['b_conv_b8_2'])
         conv_b8_3 = tf.nn.relu(self.conv2d(conv_b8_2, self.weights['W_conv_b8_3'], 1) + self.biases['b_conv_b8_3'])
-        conv_b8_3 = batch_norm('conv_b8_3', conv_b8_3, is_training)
+        conv_b8_3 = batch_norm(conv_b8_3)
         # conv_b8_4 = tf.nn.relu(tf.nn.conv2d_transpose(x, weights['W_conv_b8_4']) + biases['b_conv_b8_4'], [1,256,256,1], strides=[1, 4, 4, 1], padding='SAME'))
 
         output = self.conv2d(conv_b8_3, self.weights['out'], 1) + self.biases['out']
         return output
 
-def batch_norm(scope,x, is_training=True):
-    with tf.variable_scope(tf.get_variable_scope(), reuse=False) as scope:
-        return tf.contrib.layers.batch_norm(x, is_training = is_training, center=True, scale=True, updates_collections=None, trainable=True, reuse=None, scope=scope)
+def batch_norm(x):
+    return tf.contrib.layers.batch_norm(x)
 
 
 def test_network(net, sess, epoch, dirName = "generatedPics/"):
