@@ -4,9 +4,10 @@ from dataset_loader import *
 from utils import *
 import time
 
-batch_size = 30
-test_percentage = 2.5
-validation_percentage = 2.5
+epsilon = 1e-3
+batch_size = 3
+test_percentage = 0.25
+validation_percentage = 99.5
 data_loader = dataset(batch_size = batch_size, test_percentage = test_percentage, validation_percentage = validation_percentage)
 
 X = tf.placeholder(tf.float32,shape=[None,256,256,1])
@@ -104,57 +105,80 @@ class Net:
         # Convolution Layers, using our function
         # block1
         conv_b1_1 = tf.nn.relu(self.conv2d(x, self.weights['W_conv_b1_1'], 1) + self.biases['b_conv_b1_1'])
-        conv_b1_2 = tf.nn.relu(self.conv2d(conv_b1_1, self.weights['W_conv_b1_2'], 2) + self.biases['b_conv_b1_2'])
-        conv_b1_2 = batch_norm(conv_b1_2)
+        conv_b1_2 = self.conv2d(conv_b1_1, self.weights['W_conv_b1_2'], 2) + self.biases['b_conv_b1_2']
+        conv_b1_2 = tf.nn.relu(batch_norm(conv_b1_2, is_training))
         # block2
         conv_b2_1 = tf.nn.relu(self.conv2d(conv_b1_2, self.weights['W_conv_b2_1'], 1) + self.biases['b_conv_b2_1'])
-        conv_b2_2 = tf.nn.relu(self.conv2d(conv_b2_1, self.weights['W_conv_b2_2'], 2) + self.biases['b_conv_b2_2'])
-        conv_b2_2 = batch_norm(conv_b2_2)
+        conv_b2_2 = self.conv2d(conv_b2_1, self.weights['W_conv_b2_2'], 2) + self.biases['b_conv_b2_2']
+        conv_b2_2 = tf.nn.relu(batch_norm(conv_b2_2, is_training))
         # block3
         conv_b3_1 = tf.nn.relu(self.conv2d(conv_b2_2, self.weights['W_conv_b3_1'], 1) + self.biases['b_conv_b3_1'])
         conv_b3_2 = tf.nn.relu(self.conv2d(conv_b3_1, self.weights['W_conv_b3_2'], 1) + self.biases['b_conv_b3_2'])
-        conv_b3_3 = tf.nn.relu(self.conv2d(conv_b3_2, self.weights['W_conv_b3_3'], 2) + self.biases['b_conv_b3_3'])
-        conv_b3_3 = batch_norm(conv_b3_3)
+        conv_b3_3 = self.conv2d(conv_b3_2, self.weights['W_conv_b3_3'], 2) + self.biases['b_conv_b3_3']
+        conv_b3_3 = tf.nn.relu(batch_norm(conv_b3_3, is_training))
         # block4
         conv_b4_1 = tf.nn.relu(self.conv2d(conv_b3_3, self.weights['W_conv_b4_1'], 1) + self.biases['b_conv_b4_1'])
         conv_b4_2 = tf.nn.relu(self.conv2d(conv_b4_1, self.weights['W_conv_b4_2'], 1) + self.biases['b_conv_b4_2'])
-        conv_b4_3 = tf.nn.relu(self.conv2d(conv_b4_2, self.weights['W_conv_b4_3'], 1) + self.biases['b_conv_b4_3'])
-        conv_b4_3 = batch_norm(conv_b4_3)
+        conv_b4_3 = self.conv2d(conv_b4_2, self.weights['W_conv_b4_3'], 1) + self.biases['b_conv_b4_3']
+        conv_b4_3 = tf.nn.relu(batch_norm(conv_b4_3, is_training))
         # block5
         conv_b5_1 = tf.nn.relu(self.conv2d(conv_b4_3, self.weights['W_conv_b5_1'], 1) + self.biases['b_conv_b5_1'])
         conv_b5_2 = tf.nn.relu(self.conv2d(conv_b5_1, self.weights['W_conv_b5_2'], 1) + self.biases['b_conv_b5_2'])
-        conv_b5_3 = tf.nn.relu(self.conv2d(conv_b5_2, self.weights['W_conv_b5_3'], 1) + self.biases['b_conv_b5_3'])
-        conv_b5_3 = batch_norm(conv_b5_3)
+        conv_b5_3 = self.conv2d(conv_b5_2, self.weights['W_conv_b5_3'], 1) + self.biases['b_conv_b5_3']
+        conv_b5_3 = tf.nn.relu(batch_norm(conv_b5_3, is_training))
         # block6
         conv_b6_1 = tf.nn.relu(self.conv2d(conv_b5_3, self.weights['W_conv_b6_1'], 1) + self.biases['b_conv_b6_1'])
         conv_b6_2 = tf.nn.relu(self.conv2d(conv_b6_1, self.weights['W_conv_b6_2'], 1) + self.biases['b_conv_b6_2'])
-        conv_b6_3 = tf.nn.relu(self.conv2d(conv_b6_2, self.weights['W_conv_b6_3'], 1) + self.biases['b_conv_b6_3'])
-        conv_b6_3 = batch_norm(conv_b6_3)
+        conv_b6_3 = self.conv2d(conv_b6_2, self.weights['W_conv_b6_3'], 1) + self.biases['b_conv_b6_3']
+        conv_b6_3 = tf.nn.relu(batch_norm(conv_b6_3, is_training))
         # block7
         conv_b7_1 = tf.nn.relu(self.conv2d(conv_b6_3, self.weights['W_conv_b7_1'], 1) + self.biases['b_conv_b7_1'])
         conv_b7_2 = tf.nn.relu(self.conv2d(conv_b7_1, self.weights['W_conv_b7_2'], 1) + self.biases['b_conv_b7_2'])
-        conv_b7_3 = tf.nn.relu(self.conv2d(conv_b7_2, self.weights['W_conv_b7_3'], 1) + self.biases['b_conv_b7_3'])
-        conv_b7_3 = batch_norm(conv_b7_3)
+        conv_b7_3 = self.conv2d(conv_b7_2, self.weights['W_conv_b7_3'], 1) + self.biases['b_conv_b7_3']
+        conv_b7_3 = tf.nn.relu(batch_norm(conv_b7_3, is_training))
         # block8
         # TODO: Verify usage of batch size
         conv_b8_1 = tf.nn.relu(tf.nn.conv2d_transpose(value=conv_b7_3, output_shape=[batch_size, 64, 64, 256],
                                                       filter=self.weights['W_conv_b8_1'], strides=[1, 2, 2, 1],
                                                       padding='SAME') + self.biases['b_conv_b8_1'])
         conv_b8_2 = tf.nn.relu(self.conv2d(conv_b8_1, self.weights['W_conv_b8_2'], 1) + self.biases['b_conv_b8_2'])
-        conv_b8_3 = tf.nn.relu(self.conv2d(conv_b8_2, self.weights['W_conv_b8_3'], 1) + self.biases['b_conv_b8_3'])
-        conv_b8_3 = batch_norm(conv_b8_3)
+        conv_b8_3 = self.conv2d(conv_b8_2, self.weights['W_conv_b8_3'], 1) + self.biases['b_conv_b8_3']
+        conv_b8_3 = tf.nn.relu(batch_norm(conv_b8_3, is_training))
         # conv_b8_4 = tf.nn.relu(tf.nn.conv2d_transpose(x, weights['W_conv_b8_4']) + biases['b_conv_b8_4'], [1,256,256,1], strides=[1, 4, 4, 1], padding='SAME'))
 
         output = self.conv2d(conv_b8_3, self.weights['out'], 1) + self.biases['out']
         return output
 
-def batch_norm(x):
-    return tf.contrib.layers.batch_norm(x)
+def batch_norm_wrapper(scope,x, is_training=True):
+    with tf.variable_scope(tf.get_variable_scope(), reuse=False) as scope:
+        return tf.contrib.layers.batch_norm(x, is_training = is_training, center=True, scale=True, updates_collections=None, trainable=True, reuse=None, scope=scope)
 
+def batch_norm(inputs, is_training, decay = 0.999):
+
+    scale = tf.Variable(tf.ones(inputs.get_shape().as_list()[1:]))
+    beta = tf.Variable(tf.zeros(inputs.get_shape().as_list()[1:]))
+    pop_mean = tf.Variable(tf.zeros(inputs.get_shape().as_list()[1:]), trainable=False)
+    pop_var = tf.Variable(tf.ones(inputs.get_shape().as_list()[1:]), trainable=False)
+
+    if is_training:
+        batch_mean, batch_var = tf.nn.moments(inputs,[0])
+        train_mean = tf.assign(pop_mean,
+                               pop_mean * decay + batch_mean * (1 - decay))
+        train_var = tf.assign(pop_var,
+                              pop_var * decay + batch_var * (1 - decay))
+        with tf.control_dependencies([train_mean, train_var]):
+            return tf.nn.batch_normalization(inputs,
+                batch_mean, batch_var, beta, scale, epsilon)
+    else:
+        return tf.nn.batch_normalization(inputs,
+            pop_mean, pop_var, beta, scale, epsilon)
 
 def test_network(net, sess, epoch, dirName = "generatedPics/"):
     image_l, image_lab = data_loader.getTestData()
     image_l = np.array(image_l, dtype=np.float32)
+    sess.run(tf.global_variables_initializer())
+    saver = tf.train.Saver()
+    saver.restore(sess,"./model/model.ckpt")
     encoded_img = net.feed_forward(image_l, is_training = False)
     encoded_img_val = sess.run(encoded_img)
     images_rgb = decode_batch(image_l,encoded_img_val,2.63)
@@ -167,7 +191,7 @@ def test_network(net, sess, epoch, dirName = "generatedPics/"):
 def train_network(net):
     global_step = tf.Variable(0, name='global_step', trainable=False)
     output_log = []
-    prediction = net.feed_forward(X)
+    prediction = net.feed_forward(X,is_training=True)
     learning_rate = tf.train.exponential_decay(learning_rate=0.01, global_step=global_step, decay_steps=210000, decay_rate = 0.316, staircase=True)
 
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=Y))/batch_size
@@ -178,7 +202,7 @@ def train_network(net):
     # weighting_factor = get_weighting_factor(alpha,gamma)
     # cost = tf.reduce_mean(-((Y * tf.log(prediction)) * weighting_factor)/batch_size)
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost, global_step=global_step)
-    hm_epochs = 100
+    hm_epochs = 1
     with tf.Session(config=tf.ConfigProto(log_device_placement=False)) as sess:
         sess.run(tf.global_variables_initializer())
 
@@ -196,7 +220,7 @@ def train_network(net):
             # if epoch!=0 and epoch%10 == 0:
             #     test_network(net, sess, epoch)
         save_model(sess)
-        # test_network(net, sess, 'final')
+        test_network(net, sess, 'final')
     save_log_to_file(output_log)
 
 print "start"

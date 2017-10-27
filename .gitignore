@@ -5,3 +5,4 @@ generatedPics/
 logs/
 output_log.txt
 outs10epoch/
+model/
