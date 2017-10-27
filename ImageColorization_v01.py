@@ -4,10 +4,11 @@ from dataset_loader import *
 from utils import *
 import time
 
+
 epsilon = 1e-3
-batch_size = 3
-test_percentage = 0.25
-validation_percentage = 99.5
+batch_size = 30
+test_percentage = 2.5
+validation_percentage = 2.5
 data_loader = dataset(batch_size = batch_size, test_percentage = test_percentage, validation_percentage = validation_percentage)
 
 
@@ -148,7 +149,7 @@ class Net:
         # conv_b8_4 = tf.nn.relu(tf.nn.conv2d_transpose(x, weights['W_conv_b8_4']) + biases['b_conv_b8_4'], [1,256,256,1], strides=[1, 4, 4, 1], padding='SAME'))
 
         output = self.conv2d(conv_b8_3, self.weights['out'], 1) + self.biases['out']
-        return output, tf.train.Saver()
+        return output
 
 def batch_norm_wrapper(scope,x, is_training=True):
     with tf.variable_scope(tf.get_variable_scope(), reuse=False) as scope:
@@ -174,26 +175,41 @@ def batch_norm(inputs, is_training, decay = 0.999):
         return tf.nn.batch_normalization(inputs,
             pop_mean, pop_var, beta, scale, epsilon)
 
-def test_network(net, sess, epoch, dirName = "generatedPics/"):
+def test_network(net, epoch, dirName = "generatedPics/"):
     image_l, image_lab = data_loader.getTestData()
     image_l = np.array(image_l, dtype=np.float32)
-    sess.run(tf.global_variables_initializer())
-    encoded_img = net.feed_forward(image_l, is_training = False)
-    saver = tf.train.Saver()
-    saver.restore(sess, "./model/model.ckpt")
-    encoded_img_val = sess.run(encoded_img)
-    images_rgb = decode_batch(image_l,encoded_img_val,2.63)
-    i = 0
-    for image_rgb in images_rgb:
-        i+=1
-        imsave(dirName+'boosted_'+str(epoch)+'epoch_' + str(i) + 'Gen.jpeg', image_rgb)
+    encoded_img = net.feed_forward(image_l, is_training=False)
+    saver = tf.train.import_meta_graph('./model/model.ckpt.meta')
+
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+        saver.restore(sess, tf.train.latest_checkpoint('./model/'))
+        encoded_img_val = sess.run(encoded_img)
+        images_rgb = decode_batch(image_l, encoded_img_val, 2.63)
+        i = 0
+        for image_rgb in images_rgb:
+            i += 1
+            imsave(dirName + 'boosted_' + str(epoch) + 'epoch_' + str(i) + 'Gen.jpeg', image_rgb)
+
+    # image_l, image_lab = data_loader.getTestData()
+    # image_l = np.array(image_l, dtype=np.float32)
+    # sess.run(tf.global_variables_initializer())
+    # encoded_img = net.feed_forward(image_l, is_training = False)
+    # saver = tf.train.Saver()
+    # saver.restore(sess, "./model/model.ckpt")
+    # encoded_img_val = sess.run(encoded_img)
+    # images_rgb = decode_batch(image_l,encoded_img_val,2.63)
+    # i = 0
+    # for image_rgb in images_rgb:
+    #     i+=1
+    #     imsave(dirName+'boosted_'+str(epoch)+'epoch_' + str(i) + 'Gen.jpeg', image_rgb)
 
 
 def train_network(net):
     global_step = tf.Variable(0, name='global_step', trainable=False)
     output_log = []
     # tf.reset_default_graph()
-    prediction, saver = net.feed_forward(X,is_training=True)
+    prediction = net.feed_forward(X,is_training=True)
     learning_rate = tf.train.exponential_decay(learning_rate=0.01, global_step=global_step, decay_steps=210000, decay_rate = 0.316, staircase=True)
 
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=Y))/batch_size
@@ -204,10 +220,11 @@ def train_network(net):
     # weighting_factor = get_weighting_factor(alpha,gamma)
     # cost = tf.reduce_mean(-((Y * tf.log(prediction)) * weighting_factor)/batch_size)
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost, global_step=global_step)
-    hm_epochs = 1
+    hm_epochs = 500
     with tf.Session(config=tf.ConfigProto(log_device_placement=False)) as sess:
         sess.run(tf.global_variables_initializer())
-
+        saver = tf.train.Saver()
+        # save_path = saver.save(sess, "./model/model.ckpt", global_step=global_step)
         for epoch in range(hm_epochs):
             epoch_loss = 0
             data_loader.shuffleTrainImages()
@@ -219,29 +236,16 @@ def train_network(net):
                 epoch_loss += c
             print('Epoch', epoch, 'completed  out of', hm_epochs, 'loss:', epoch_loss)
             output_log.append('Epoch: ' +  str(epoch) + ' loss: ' + str(epoch_loss))
-            # if epoch!=0 and epoch%10 == 0:
-            #     test_network(net, sess, epoch)
+            if epoch!=0 and epoch%10 == 0:
+                save_path = saver.save(sess, "./model/model.ckpt")
+                print("Model saved in file: %s" % save_path)
+                test_network(net, epoch)
+        # save_path = saver.save(sess, "./model/model.ckpt")
+        # print("Model saved in file: %s" % save_path)
         save_path = saver.save(sess, "./model/model.ckpt")
         print("Model saved in file: %s" % save_path)
-        # save_model(sess)
+        test_network(net, 'final')
 
-    # tf.reset_default_graph()
-    image_l, image_lab = data_loader.getTestData()
-    image_l = np.array(image_l, dtype=np.float32)
-    encoded_img, saver = net.feed_forward(image_l, is_training=False)
-    saver = tf.train.import_meta_graph('./model/model.ckpt.meta')
-
-    # saver = tf.train.Saver()
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        # saver.restore(sess, "./model/model.ckpt")
-        saver.restore(sess, tf.train.latest_checkpoint('./model/'))
-        encoded_img_val = sess.run(encoded_img)
-        images_rgb = decode_batch(image_l, encoded_img_val, 2.63)
-        i = 0
-        for image_rgb in images_rgb:
-            i += 1
-            imsave("generatedPics/" + 'boosted_' + str(epoch) + 'epoch_' + str(i) + 'Gen.jpeg', image_rgb)
 
     save_log_to_file(output_log)
 

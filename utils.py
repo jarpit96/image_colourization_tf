@@ -106,13 +106,6 @@ def test_encode(dirName = "generatedPics/"):
     # image = decode(X_l, sess.run(prediction))
     imsave(dirName + 'sample2.jpeg', image)
 
-
-def save_model(sess):
-    saver = tf.train.Saver()
-    save_path = saver.save(sess, "./model/model.ckpt")
-    print("Model saved in file: %s" % save_path)
-
-
 #Auxilary Util Functions
 
 
