@@ -46,6 +46,17 @@ class dataset():
         image_l, image_lab = self.rgb2lab(np.array(images))
         return image_l, image_lab
 
+    def getTrainData(self):
+        '''
+        Get the Whole Train Data
+        Return:
+        data_l(NxHxWX1), data_lab(NxHxWX3) retuned for test Data Division
+        '''
+        images = []
+        for image in self.train_image_names:
+            images.append(self.getImage256(image))
+        return self.rgb2lab(np.array(images))
+
     def getTestData(self):
         '''
         Get the Whole test Data

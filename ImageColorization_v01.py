@@ -10,7 +10,8 @@ batch_size = 30
 test_percentage = 2.5
 validation_percentage = 2.5
 data_loader = dataset(batch_size = batch_size, test_percentage = test_percentage, validation_percentage = validation_percentage)
-
+total_train_data = data_loader.getTrainData()
+total_train_mean, total_train_var = tf.nn.moments(total_train_data,[0])
 
 X = tf.placeholder(tf.float32,shape=[None,256,256,1])
 Y = tf.placeholder(tf.float32,shape=[None,64,64,313])
@@ -151,59 +152,34 @@ class Net:
         output = self.conv2d(conv_b8_3, self.weights['out'], 1) + self.biases['out']
         return output
 
-def batch_norm_wrapper(scope,x, is_training=True):
-    with tf.variable_scope(tf.get_variable_scope(), reuse=False) as scope:
-        return tf.contrib.layers.batch_norm(x, is_training = is_training, center=True, scale=True, updates_collections=None, trainable=True, reuse=None, scope=scope)
-
 def batch_norm(inputs, is_training, decay = 0.999):
 
     scale = tf.Variable(tf.ones(inputs.get_shape().as_list()[1:]))
     beta = tf.Variable(tf.zeros(inputs.get_shape().as_list()[1:]))
-    pop_mean = tf.Variable(tf.zeros(inputs.get_shape().as_list()[1:]), trainable=False)
-    pop_var = tf.Variable(tf.ones(inputs.get_shape().as_list()[1:]), trainable=False)
 
     if is_training:
         batch_mean, batch_var = tf.nn.moments(inputs,[0])
-        train_mean = tf.assign(pop_mean,
-                               pop_mean * decay + batch_mean * (1 - decay))
-        train_var = tf.assign(pop_var,
-                              pop_var * decay + batch_var * (1 - decay))
-        with tf.control_dependencies([train_mean, train_var]):
-            return tf.nn.batch_normalization(inputs,
-                batch_mean, batch_var, beta, scale, epsilon)
+        return tf.nn.batch_normalization(inputs,
+            batch_mean, batch_var, beta, scale, epsilon)
     else:
         return tf.nn.batch_normalization(inputs,
-            pop_mean, pop_var, beta, scale, epsilon)
+            total_train_mean, total_train_var, beta, scale, epsilon)
 
 def test_network(net, epoch, dirName = "generatedPics/"):
     image_l, image_lab = data_loader.getTestData()
     image_l = np.array(image_l, dtype=np.float32)
     encoded_img = net.feed_forward(image_l, is_training=False)
-    saver = tf.train.import_meta_graph('./model/model.ckpt.meta')
+    #saver = tf.train.import_meta_graph('./model/model.ckpt.meta')
 
     with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        saver.restore(sess, tf.train.latest_checkpoint('./model/'))
+        # sess.run(tf.global_variables_initializer())
+        #saver.restore(sess, tf.train.latest_checkpoint('./model/'))
         encoded_img_val = sess.run(encoded_img)
         images_rgb = decode_batch(image_l, encoded_img_val, 2.63)
         i = 0
         for image_rgb in images_rgb:
             i += 1
             imsave(dirName + 'boosted_' + str(epoch) + 'epoch_' + str(i) + 'Gen.jpeg', image_rgb)
-
-    # image_l, image_lab = data_loader.getTestData()
-    # image_l = np.array(image_l, dtype=np.float32)
-    # sess.run(tf.global_variables_initializer())
-    # encoded_img = net.feed_forward(image_l, is_training = False)
-    # saver = tf.train.Saver()
-    # saver.restore(sess, "./model/model.ckpt")
-    # encoded_img_val = sess.run(encoded_img)
-    # images_rgb = decode_batch(image_l,encoded_img_val,2.63)
-    # i = 0
-    # for image_rgb in images_rgb:
-    #     i+=1
-    #     imsave(dirName+'boosted_'+str(epoch)+'epoch_' + str(i) + 'Gen.jpeg', image_rgb)
-
 
 def train_network(net):
     global_step = tf.Variable(0, name='global_step', trainable=False)
@@ -220,7 +196,7 @@ def train_network(net):
     # weighting_factor = get_weighting_factor(alpha,gamma)
     # cost = tf.reduce_mean(-((Y * tf.log(prediction)) * weighting_factor)/batch_size)
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost, global_step=global_step)
-    hm_epochs = 500
+    hm_epochs = 2
     with tf.Session(config=tf.ConfigProto(log_device_placement=False)) as sess:
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()
