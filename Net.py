@@ -5,7 +5,7 @@ class Net:
     """
     Main Neural Network Class
     """
-    def __init__(self, batch_size):
+    def __init__(self, X, Y, batch_size):
         self.weights = {
                     # block1
                     'W_conv_b1_1': self.weight_variable([3, 3, 1, 64]),
@@ -77,6 +77,18 @@ class Net:
                 'out': self.bias_variable([313])
                 }
         self.batch_size = batch_size
+        self.global_step = tf.Variable(0, name='global_step', trainable=False)
+        self.prediction = self.feed_forward(X, is_training=True)
+        self.learning_rate = tf.train.exponential_decay(learning_rate=0.01, global_step=self.global_step,
+                                               decay_steps=210000, decay_rate = 0.316, staircase=True)
+        self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=self.prediction, labels=Y))/batch_size
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.cost, global_step=self.global_step)
+        # Uncomment for cost with probabilities
+        # alpha = 1
+        # gamma = 0.5
+        # prior_file = 'resources/prior_probs.npy'
+        # weighting_factor = get_weighting_factor(alpha,gamma)
+        # cost = tf.reduce_mean(-((Y * tf.log(prediction)) * weighting_factor)/batch_size)
 
     def weight_variable(self, shape):
         initial = tf.truncated_normal(shape, stddev=0.1)
@@ -89,39 +101,24 @@ class Net:
     def conv2d(self, x, W, s):
         return tf.nn.conv2d(x, W, strides=[1, s, s, 1], padding='SAME')
 
-    def batch_norm(self, inputs, is_training, decay=0.999, is_debug=False):
+    def batch_norm(self, inputs, is_training, decay=0.999):
         self.epsilon = 1e-3
         scale = tf.Variable(tf.ones(inputs.get_shape().as_list()[1:]))
         beta = tf.Variable(tf.zeros(inputs.get_shape().as_list()[1:]))
         pop_mean = tf.Variable(tf.zeros(inputs.get_shape().as_list()[1:]), trainable=False)
         pop_var = tf.Variable(tf.ones(inputs.get_shape().as_list()[1:]), trainable=False)
-
-        if is_debug:
-            if is_training:
-                batch_mean, batch_var = tf.nn.moments(inputs, [0])
-                train_mean = tf.assign(pop_mean,
-                                       pop_mean * decay + batch_mean * (1 - decay))
-                train_var = tf.assign(pop_var,
-                                      pop_var * decay + batch_var * (1 - decay))
-                with tf.control_dependencies([train_mean, train_var]):
-                    return tf.nn.batch_normalization(inputs,
-                                                     batch_mean, batch_var, beta, scale, self.epsilon), batch_mean, batch_var
-            else:
+        if is_training:
+            batch_mean, batch_var = tf.nn.moments(inputs, [0])
+            train_mean = tf.assign(pop_mean,
+                                   pop_mean * decay + batch_mean * (1 - decay))
+            train_var = tf.assign(pop_var,
+                                  pop_var * decay + batch_var * (1 - decay))
+            with tf.control_dependencies([train_mean, train_var]):
                 return tf.nn.batch_normalization(inputs,
-                                                 pop_mean, pop_var, beta, scale, self.epsilon), pop_mean, pop_var
+                                                 batch_mean, batch_var, beta, scale, self.epsilon)
         else:
-            if is_training:
-                batch_mean, batch_var = tf.nn.moments(inputs, [0])
-                train_mean = tf.assign(pop_mean,
-                                       pop_mean * decay + batch_mean * (1 - decay))
-                train_var = tf.assign(pop_var,
-                                      pop_var * decay + batch_var * (1 - decay))
-                with tf.control_dependencies([train_mean, train_var]):
-                    return tf.nn.batch_normalization(inputs,
-                                                     batch_mean, batch_var, beta, scale, self.epsilon)
-            else:
-                return tf.nn.batch_normalization(inputs,
-                                                 pop_mean, pop_var, beta, scale, self.epsilon)
+            return tf.nn.batch_normalization(inputs,
+                                             pop_mean, pop_var, beta, scale, self.epsilon)
 
     def feed_forward(self, x, is_training=True):  # , keep_rate):
         # Convolution Layers, using our function
@@ -159,13 +156,13 @@ class Net:
         conv_b7_3 = self.conv2d(conv_b7_2, self.weights['W_conv_b7_3'], 1) + self.biases['b_conv_b7_3']
         conv_b7_3 = tf.nn.relu(self.batch_norm(conv_b7_3, is_training))
         # block8
-        # TODO: Verify usage of batch size
         conv_b8_1 = tf.nn.relu(tf.nn.conv2d_transpose(value=conv_b7_3, output_shape=[self.batch_size, 64, 64, 256],
                                                       filter=self.weights['W_conv_b8_1'], strides=[1, 2, 2, 1],
                                                       padding='SAME') + self.biases['b_conv_b8_1'])
         conv_b8_2 = tf.nn.relu(self.conv2d(conv_b8_1, self.weights['W_conv_b8_2'], 1) + self.biases['b_conv_b8_2'])
         conv_b8_3 = self.conv2d(conv_b8_2, self.weights['W_conv_b8_3'], 1) + self.biases['b_conv_b8_3']
-        conv_b8_3 = tf.nn.relu(self.batch_norm(conv_b8_3, is_training))
+        conv_b8_3 = tf.nn.relu(conv_b8_3)
 
         output = self.conv2d(conv_b8_3, self.weights['out'], 1) + self.biases['out']
         return output
+
