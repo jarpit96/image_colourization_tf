@@ -35,9 +35,8 @@ class Net:
                     'W_conv_b7_3': self.weight_variable([3, 3, 512, 256]),
                     # block8
                     'W_conv_b8_1': self.weight_variable([4, 4, 256, 256]),
-                    # 'W_conv_b8_2': self.weight_variable([3, 3, 256, 256]),
-                    # 'W_conv_b8_3': self.weight_variable([3, 3, 256, 256]),
-                    # 'W_conv_b2_4': weight_variable([3, 3, 256, 256]),
+                    'W_conv_b8_2': self.weight_variable([3, 3, 256, 256]),
+                    'W_conv_b8_3': self.weight_variable([3, 3, 256, 256]),
 
                     'out': self.weight_variable([1, 1, 256, 313])
                 }
@@ -70,8 +69,8 @@ class Net:
                 'b_conv_b7_3': self.bias_variable([256]),
                 # block8
                 'b_conv_b8_1': self.bias_variable([256]),
-                # 'b_conv_b8_2': self.bias_variable([256]),
-                # 'b_conv_b8_3': self.bias_variable([256]),
+                'b_conv_b8_2': self.bias_variable([256]),
+                'b_conv_b8_3': self.bias_variable([256]),
                 # # 'b_conv_b8_4': bias_variable([256]),
 
                 'out': self.bias_variable([313])
@@ -123,15 +122,15 @@ class Net:
     def feed_forward(self, x, is_training=True):  # , keep_rate):
         # Convolution Layers, using our function
         # block1
-        conv_b1_1 = tf.nn.relu(self.conv2d(x, self.weights['W_conv_b1_1'], 1) + self.biases['b_conv_b1_1'])
+        conv_b1_1 = tf.nn.relu(self.conv2d(x, self.weights['W_conv_b1_1'], 2) + self.biases['b_conv_b1_1'])
         # conv_b1_2 = self.conv2d(conv_b1_1, self.weights['W_conv_b1_2'], 2) + self.biases['b_conv_b1_2']
         conv_b1_2 = tf.nn.relu(self.batch_norm(conv_b1_1, is_training))
         # block2
-        conv_b2_1 = tf.nn.relu(self.conv2d(conv_b1_2, self.weights['W_conv_b2_1'], 1) + self.biases['b_conv_b2_1'])
+        conv_b2_1 = tf.nn.relu(self.conv2d(conv_b1_2, self.weights['W_conv_b2_1'], 2) + self.biases['b_conv_b2_1'])
         # conv_b2_2 = self.conv2d(conv_b2_1, self.weights['W_conv_b2_2'], 2) + self.biases['b_conv_b2_2']
         conv_b2_2 = tf.nn.relu(self.batch_norm(conv_b2_1, is_training))
         # block3
-        conv_b3_1 = tf.nn.relu(self.conv2d(conv_b2_2, self.weights['W_conv_b3_1'], 1) + self.biases['b_conv_b3_1'])
+        conv_b3_1 = tf.nn.relu(self.conv2d(conv_b2_2, self.weights['W_conv_b3_1'], 2) + self.biases['b_conv_b3_1'])
         # conv_b3_2 = tf.nn.relu(self.conv2d(conv_b3_1, self.weights['W_conv_b3_2'], 1) + self.biases['b_conv_b3_2'])
         # conv_b3_3 = self.conv2d(conv_b3_2, self.weights['W_conv_b3_3'], 2) + self.biases['b_conv_b3_3']
         conv_b3_3 = tf.nn.relu(self.batch_norm(conv_b3_1, is_training))
@@ -159,11 +158,11 @@ class Net:
         conv_b8_1 = tf.nn.relu(tf.nn.conv2d_transpose(value=conv_b7_3, output_shape=[self.batch_size, 64, 64, 256],
                                                       filter=self.weights['W_conv_b8_1'], strides=[1, 2, 2, 1],
                                                       padding='SAME') + self.biases['b_conv_b8_1'])
-        # conv_b8_2 = tf.nn.relu(self.conv2d(conv_b8_1, self.weights['W_conv_b8_2'], 1) + self.biases['b_conv_b8_2'])
-        # conv_b8_3 = self.conv2d(conv_b8_2, self.weights['W_conv_b8_3'], 1) + self.biases['b_conv_b8_3']
-        # conv_b8_3 = tf.nn.relu(conv_b8_3)
+        conv_b8_2 = tf.nn.relu(self.conv2d(conv_b8_1, self.weights['W_conv_b8_2'], 1) + self.biases['b_conv_b8_2'])
+        conv_b8_3 = self.conv2d(conv_b8_2, self.weights['W_conv_b8_3'], 1) + self.biases['b_conv_b8_3']
+        conv_b8_3 = tf.nn.relu(conv_b8_3)
 
-        output = self.conv2d(conv_b8_1, self.weights['out'], 1) + self.biases['out']
+        output = self.conv2d(conv_b8_3, self.weights['out'], 1) + self.biases['out']
         return output
         # # Convolution Layers, using our function
         # # block1

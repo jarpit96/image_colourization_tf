@@ -36,7 +36,9 @@ def train_network():
     output_log = []
     with tf.Session(config=tf.ConfigProto(log_device_placement=False)) as sess:
         sess.run(tf.global_variables_initializer())
+        # writer = tf.summary.FileWriter('./graph_train', sess.graph)
         writer = tf.summary.FileWriter('./summaries/my_graph', sess.graph)
+        writer.close()
         saver = tf.train.Saver()
         for epoch in range(hm_epochs):
             epoch_loss = 0
@@ -48,7 +50,7 @@ def train_network():
                 epoch_loss += c
             print('Epoch', epoch, 'completed  out of', hm_epochs, 'loss:', epoch_loss)
             output_log.append('Epoch: ' + str(epoch) + ' loss: ' + str(epoch_loss))
-            if epoch != 0 and epoch % 10 == 0:
+            if epoch != 0 and epoch % 50 == 0:
                 save_path = saver.save(sess, "./model/model", global_step=net.global_step)
                 print("Model saved in file: %s" % save_path)
                 test_network(epoch)
